@@ -62,7 +62,8 @@ def main():
     missing = [item for item in literals() if item not in catalogue]
     if not check and added:
         CATALOGUE.write_text(json.dumps(dict(sorted(catalogue.items())), indent=2,
-                                        ensure_ascii=False) + '\n', encoding='utf-8')
+                                        ensure_ascii=False) + '\n', encoding='utf-8',
+                             newline='\n')
     print(json.dumps({'catalogueEntries': len(catalogue), 'added': added,
                       'interfaceLiterals': len(literals()), 'missing': missing}, indent=2,
                      ensure_ascii=False))

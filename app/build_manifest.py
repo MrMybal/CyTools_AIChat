@@ -459,8 +459,10 @@ def manifest():
 def main():
     import model_options
     document = model_options.extend_manifest(manifest())
+    # LF on disk as well as in the index: the repository stores text as LF, and a manifest
+    # regenerated with platform line endings would differ from it after every run.
     (APP / 'CyTool.json').write_text(json.dumps(document, indent=2, ensure_ascii=False) + '\n',
-                                     encoding='utf-8')
+                                     encoding='utf-8', newline='\n')
     print('Wrote %s with %d operations.' % (APP / 'CyTool.json', len(document['operations'])))
 
 
