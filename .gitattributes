@@ -1,0 +1,9 @@
+# Text is stored with LF, as in the CyToolsCore repository. Only the Windows batch file
+# keeps CRLF, which cmd.exe expects.
+*           text=auto eol=lf
+*.cmd       text eol=crlf
+*.png       binary
+*.exe       binary
+*.dll       binary
+*.whl       binary
+*.gguf      binary

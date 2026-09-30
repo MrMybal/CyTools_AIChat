@@ -1,0 +1,2918 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": "1.0",
+  "id": "cy.tool.aichat",
+  "name": "CyTools_AIChat",
+  "version": "0.1.0",
+  "description": "A chat engine for connected agent CLIs, HTTP model APIs and local GGUF models with LoRA adapters. Conversations are kept on disk and opened in tabs in the standalone window.",
+  "vendor": "Cyberalien",
+  "author": "Cyberalien",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/MrMybal/CyTools_AIChat",
+  "executable": "runtime/python/Scripts/python.exe app/tool.py",
+  "standaloneExecutable": "CyTools_AIChat.exe",
+  "categories": [
+    "ai",
+    "chat",
+    "utility"
+  ],
+  "tags": [
+    "chat",
+    "llm",
+    "codex",
+    "claude",
+    "ollama",
+    "llama.cpp",
+    "lora",
+    "conversations"
+  ],
+  "capabilities": [
+    "jobs",
+    "cancellation",
+    "progress",
+    "events"
+  ],
+  "backends": [],
+  "platforms": [
+    {
+      "os": "Windows",
+      "architecture": "x64",
+      "status": "Supported",
+      "computeBackends": [
+        "CPU",
+        "CUDA"
+      ],
+      "tested": [
+        {
+          "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+          "device": "NVIDIA GeForce RTX 3090 24 GB",
+          "driver": "610.47",
+          "runtime": "Python 3.11.5, cytools-core 0.9.0, imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
+          "date": "2026-09-23",
+          "status": "Launcher, ImGui window in English and French, local GGUF turn on CUDA, GGUF LoRA load and live rescale, Codex app-server and cli-jsonl, Claude Code, Antigravity, Ollama on both of its transports, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures, the CLI, MCP and the pytest suite were executed. OpenCode, the paid HTTP APIs (OpenAI, OpenRouter, Anthropic) and a real GitHub release of this application were not."
+        }
+      ]
+    },
+    {
+      "os": "Linux",
+      "architecture": "x64",
+      "status": "Experimental",
+      "computeBackends": [
+        "CPU",
+        "CUDA"
+      ]
+    },
+    {
+      "os": "macOS",
+      "architecture": "ARM64",
+      "status": "Unknown",
+      "computeBackends": [
+        "CPU"
+      ]
+    }
+  ],
+  "interfaces": [
+    "Native",
+    "CLI",
+    "JSONL",
+    "HTTP",
+    "MCP",
+    "ImGui"
+  ],
+  "runtimeRequirements": [
+    {
+      "id": "python",
+      "name": "Python",
+      "version": ">=3.11,<3.13",
+      "required": false,
+      "description": "The private interpreter in runtime/python runs this Tool."
+    },
+    {
+      "id": "llama-server",
+      "name": "llama.cpp server",
+      "version": "b11114",
+      "required": false,
+      "description": "Needed only by the local provider. Installed from the Tool into runtime/engines; engine_list reports whether it is present."
+    },
+    {
+      "id": "agent-cli",
+      "name": "Agent command line",
+      "required": false,
+      "description": "codex, claude, agy or opencode, for the agent CLI providers. Each uses its own sign-in; list_providers reports what was found."
+    }
+  ],
+  "concurrency": {
+    "policy": "Concurrent",
+    "maxWorkers": 4
+  },
+  "distributionStatus": "Standalone Windows x64 build validated locally; see app/Docs/CapabilityCoverage.md",
+  "operations": [
+    {
+      "id": "chat",
+      "name": "Chat",
+      "description": "Send one message and store the reply in a conversation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The message to send.",
+            "x-cy-kind": "MultilineString"
+          },
+          "conversation": {
+            "type": "string",
+            "description": "Conversation id to continue. Empty starts a new conversation and returns its id.",
+            "default": ""
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "",
+              "codex",
+              "claude-code",
+              "antigravity",
+              "opencode",
+              "codebuddy",
+              "command-code",
+              "devin",
+              "openai",
+              "openrouter",
+              "openai-compatible",
+              "anthropic",
+              "ollama",
+              "llamacpp"
+            ],
+            "default": "",
+            "description": "Provider to talk to. Empty reuses the one stored in the conversation."
+          },
+          "transport": {
+            "type": "string",
+            "enum": [
+              "",
+              "app-server",
+              "cli-jsonl",
+              "chat-completions",
+              "messages",
+              "native",
+              "local-server"
+            ],
+            "default": "",
+            "description": "Transport within the provider. Empty uses its default."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model identifier for the provider. Empty reuses the conversation model.",
+            "default": ""
+          },
+          "system_prompt": {
+            "type": "string",
+            "description": "System prompt for this conversation. A session provider that has no system field receives it folded into the first message, and the reply reports that.",
+            "default": "",
+            "x-cy-kind": "MultilineString"
+          },
+          "preset": {
+            "type": "string",
+            "description": "Preset id whose system prompt and sampling values fill anything not set explicitly.",
+            "default": ""
+          },
+          "engine": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "cpu",
+              "cuda"
+            ],
+            "default": "auto",
+            "description": "llama.cpp build for the local provider. auto prefers an installed CUDA build."
+          },
+          "threads": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 256,
+            "default": 0,
+            "description": "CPU threads for the local provider. 0 lets llama.cpp decide."
+          },
+          "keep_loaded": {
+            "type": "boolean",
+            "default": true,
+            "description": "Keep the local model resident after the reply so the next turn starts immediately."
+          },
+          "reasoning_effort": {
+            "type": "string",
+            "enum": [
+              "",
+              "default",
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "default": "",
+            "description": "How much a reasoning model should think before answering. Empty uses the value the catalogue records for that model. \"none\" turns thinking off through the chat template; the other levels are passed to llama.cpp. Local provider only."
+          },
+          "settings": {
+            "type": "object",
+            "default": {},
+            "description": "Extra provider fields merged into the request, for options this schema does not name."
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "description": "Sampling temperature. Higher is more varied. Left unset, the provider default applies."
+          },
+          "top_p": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Nucleus sampling threshold."
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Keep only the K most likely tokens. Ignored by providers that do not expose it."
+          },
+          "max_tokens": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 131072,
+            "description": "Maximum tokens in the reply."
+          },
+          "repeat_penalty": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4,
+            "description": "Penalty applied to repeated tokens. Local and Ollama providers only."
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 2147483647,
+            "description": "Sampling seed. -1 leaves it to the provider. The same seed only reproduces a reply with the same weights and runtime."
+          },
+          "context_tokens": {
+            "type": "integer",
+            "minimum": 512,
+            "maximum": 1048576,
+            "description": "Context window requested when loading a local model. Changing it restarts the local server."
+          },
+          "history_limit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Send only the last N stored messages to a stateless provider. 0 sends the whole conversation. A session provider keeps its own history and ignores this."
+          },
+          "model_profile": {
+            "type": "string",
+            "default": "",
+            "description": "ID from the local model library; empty uses the selected built-in model."
+          },
+          "loras": {
+            "type": "array",
+            "maxItems": 8,
+            "default": [],
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "strength"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "strength": {
+                  "type": "number",
+                  "minimum": -4,
+                  "maximum": 4
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "description": "Conversation the reply was stored in."
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Identifier of the stored assistant message."
+          },
+          "text": {
+            "type": "string",
+            "description": "The reply text."
+          },
+          "providerId": {
+            "type": "string",
+            "description": "Provider that produced the reply."
+          },
+          "transport": {
+            "type": "string",
+            "description": "Transport used."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model reported by the provider."
+          },
+          "kind": {
+            "type": "string",
+            "description": "stateless when the transcript is the context, session when the provider keeps the history."
+          },
+          "usage": {
+            "type": "object",
+            "description": "Token accounting as reported by the provider, when it reports any."
+          },
+          "seconds": {
+            "type": "number",
+            "description": "Wall-clock duration of the turn."
+          },
+          "nativeSessionId": {
+            "type": "string",
+            "description": "Provider-side session identifier, when the provider has one."
+          },
+          "thinkingCharacters": {
+            "type": "integer",
+            "description": "Characters of reasoning text streamed but not stored in the reply."
+          },
+          "file": {
+            "type": "string",
+            "description": "Markdown file holding the reply inside the job workspace.",
+            "x-cy-kind": "File"
+          },
+          "mimeType": {
+            "type": "string",
+            "description": "MIME type of the reply file."
+          }
+        },
+        "required": [
+          "conversationId",
+          "messageId",
+          "text",
+          "providerId",
+          "transport",
+          "model",
+          "kind",
+          "usage",
+          "seconds",
+          "nativeSessionId",
+          "thinkingCharacters",
+          "file",
+          "mimeType"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "conversationId",
+          "type": "Value",
+          "description": "Conversation the reply was stored in."
+        },
+        {
+          "id": "messageId",
+          "type": "Value",
+          "description": "Identifier of the stored assistant message."
+        },
+        {
+          "id": "text",
+          "type": "Value",
+          "description": "The reply text."
+        },
+        {
+          "id": "providerId",
+          "type": "Value",
+          "description": "Provider that produced the reply."
+        },
+        {
+          "id": "transport",
+          "type": "Value",
+          "description": "Transport used."
+        },
+        {
+          "id": "model",
+          "type": "Value",
+          "description": "Model reported by the provider."
+        },
+        {
+          "id": "kind",
+          "type": "Value",
+          "description": "stateless when the transcript is the context, session when the provider keeps the history."
+        },
+        {
+          "id": "usage",
+          "type": "Object",
+          "description": "Token accounting as reported by the provider, when it reports any."
+        },
+        {
+          "id": "seconds",
+          "type": "Value",
+          "description": "Wall-clock duration of the turn."
+        },
+        {
+          "id": "nativeSessionId",
+          "type": "Value",
+          "description": "Provider-side session identifier, when the provider has one."
+        },
+        {
+          "id": "thinkingCharacters",
+          "type": "Value",
+          "description": "Characters of reasoning text streamed but not stored in the reply."
+        },
+        {
+          "id": "file",
+          "type": "File",
+          "description": "Markdown file holding the reply inside the job workspace."
+        },
+        {
+          "id": "mimeType",
+          "type": "Value",
+          "description": "MIME type of the reply file."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 536870912,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "network",
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true
+    },
+    {
+      "id": "list_providers",
+      "name": "List providers",
+      "description": "Inventory every provider with its transports and what was actually detected on this machine.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Limit the report to one provider.",
+            "default": ""
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "providers": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "One report per provider."
+          }
+        },
+        "required": [
+          "providers"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "providers",
+          "type": "Value",
+          "description": "One report per provider."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "network",
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "list_provider_models",
+      "name": "List provider models",
+      "description": "Ask a provider for the models it offers. Not every provider publishes a catalogue.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Provider id."
+          },
+          "transport": {
+            "type": "string",
+            "enum": [
+              "",
+              "app-server",
+              "cli-jsonl",
+              "chat-completions",
+              "messages",
+              "native",
+              "local-server"
+            ],
+            "default": ""
+          }
+        },
+        "required": [
+          "provider"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Model rows."
+          },
+          "providerId": {
+            "type": "string",
+            "description": "Provider queried."
+          }
+        },
+        "required": [
+          "models",
+          "providerId"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "models",
+          "type": "Value",
+          "description": "Model rows."
+        },
+        {
+          "id": "providerId",
+          "type": "Value",
+          "description": "Provider queried."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "network",
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "conversation_list",
+      "name": "List conversations",
+      "description": "Every stored conversation, most recent first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "conversations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Conversation summaries."
+          }
+        },
+        "required": [
+          "conversations"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "conversations",
+          "type": "Value",
+          "description": "Conversation summaries."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "conversation_read",
+      "name": "Read a conversation",
+      "description": "The full stored transcript of one conversation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "string",
+            "description": "Conversation id."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "default": 0,
+            "description": "Return only the last N messages. 0 returns all of them."
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "object",
+            "description": "The stored document."
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "conversation",
+          "type": "Object",
+          "description": "The stored document."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "conversation_create",
+      "name": "Create a conversation",
+      "description": "Start an empty conversation and return its id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title. Empty derives one from the first message.",
+            "default": ""
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "",
+              "codex",
+              "claude-code",
+              "antigravity",
+              "opencode",
+              "codebuddy",
+              "command-code",
+              "devin",
+              "openai",
+              "openrouter",
+              "openai-compatible",
+              "anthropic",
+              "ollama",
+              "llamacpp"
+            ],
+            "default": ""
+          },
+          "transport": {
+            "type": "string",
+            "enum": [
+              "",
+              "app-server",
+              "cli-jsonl",
+              "chat-completions",
+              "messages",
+              "native",
+              "local-server"
+            ],
+            "default": ""
+          },
+          "model": {
+            "type": "string",
+            "description": "Model identifier.",
+            "default": ""
+          },
+          "system_prompt": {
+            "type": "string",
+            "description": "System prompt.",
+            "default": "",
+            "x-cy-kind": "MultilineString"
+          },
+          "preset": {
+            "type": "string",
+            "description": "Preset id to start from.",
+            "default": ""
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "object",
+            "description": "The created document."
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "conversation",
+          "type": "Object",
+          "description": "The created document."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "conversation_delete",
+      "name": "Delete a conversation",
+      "description": "Move a conversation out of the active list. The document is kept as a timestamped backup.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "string",
+            "description": "Conversation id."
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Conversation id."
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "backup": {
+            "type": "string",
+            "description": "Where the document was moved."
+          }
+        },
+        "required": [
+          "id",
+          "deleted",
+          "backup"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "id",
+          "type": "Value",
+          "description": "Conversation id."
+        },
+        {
+          "id": "deleted",
+          "type": "Value",
+          "description": "deleted"
+        },
+        {
+          "id": "backup",
+          "type": "Value",
+          "description": "Where the document was moved."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "conversation_export",
+      "name": "Export a conversation",
+      "description": "Write a conversation to a file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "string",
+            "description": "Conversation id."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "markdown",
+              "json"
+            ],
+            "default": "markdown"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Absolute path to write to. Empty writes into data/exports.",
+            "default": ""
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The written file.",
+            "x-cy-kind": "File"
+          },
+          "format": {
+            "type": "string",
+            "description": "Format written."
+          },
+          "mimeType": {
+            "type": "string",
+            "description": "MIME type."
+          }
+        },
+        "required": [
+          "file",
+          "format",
+          "mimeType"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "file",
+          "type": "File",
+          "description": "The written file."
+        },
+        {
+          "id": "format",
+          "type": "Value",
+          "description": "Format written."
+        },
+        {
+          "id": "mimeType",
+          "type": "Value",
+          "description": "MIME type."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "filesystemExternal"
+      ],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "conversation_reset_session",
+      "name": "Forget the provider session",
+      "description": "Drop the provider-side session so the next turn starts a fresh one. The stored transcript is kept.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "string",
+            "description": "Conversation id."
+          },
+          "provider": {
+            "type": "string",
+            "description": "Limit to one provider. Empty forgets every session of the conversation.",
+            "default": ""
+          },
+          "transport": {
+            "type": "string",
+            "enum": [
+              "",
+              "app-server",
+              "cli-jsonl",
+              "chat-completions",
+              "messages",
+              "native",
+              "local-server"
+            ],
+            "default": ""
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "object",
+            "description": "The updated document."
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "conversation",
+          "type": "Object",
+          "description": "The updated document."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "preset_list",
+      "name": "List presets",
+      "description": "Presets shipped with the application and those you saved.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "presets": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Preset documents."
+          }
+        },
+        "required": [
+          "presets"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "presets",
+          "type": "Value",
+          "description": "Preset documents."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "preset_save",
+      "name": "Save a preset",
+      "description": "Create or replace a preset. Secrets are never part of a preset.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Preset id. Empty mints one.",
+            "default": ""
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "description": {
+            "type": "string",
+            "description": "What this preset is for.",
+            "default": ""
+          },
+          "system_prompt": {
+            "type": "string",
+            "description": "System prompt.",
+            "default": "",
+            "x-cy-kind": "MultilineString"
+          },
+          "settings": {
+            "type": "object",
+            "default": {},
+            "description": "Sampling values: context_tokens, history_limit, max_tokens, repeat_penalty, seed, temperature, top_k, top_p"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "object",
+            "description": "The stored preset."
+          }
+        },
+        "required": [
+          "preset"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "preset",
+          "type": "Object",
+          "description": "The stored preset."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "preset_delete",
+      "name": "Delete a preset",
+      "description": "Remove a preset you saved.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Preset id."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Preset id."
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "deleted"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "id",
+          "type": "Value",
+          "description": "Preset id."
+        },
+        {
+          "id": "deleted",
+          "type": "Value",
+          "description": "deleted"
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "model_list",
+      "name": "List local weights",
+      "description": "Catalogue of downloadable GGUF models and LoRA adapters with their installation state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "",
+              "model",
+              "lora"
+            ],
+            "default": ""
+          },
+          "verify": {
+            "type": "boolean",
+            "default": false,
+            "description": "Re-hash installed files. Slow on large weights."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Catalogue rows."
+          }
+        },
+        "required": [
+          "models"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "models",
+          "type": "Value",
+          "description": "Catalogue rows."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": false
+    },
+    {
+      "id": "model_install",
+      "name": "Install local weights",
+      "description": "Download and verify a catalogue entry. Resumes an interrupted download.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Catalogue entry id."
+          },
+          "accept_license": {
+            "type": "boolean",
+            "default": false,
+            "description": "Confirms you accepted the licence on the provider page yourself."
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Entry id."
+          },
+          "installed": {
+            "type": "boolean"
+          },
+          "sizeBytes": {
+            "type": "integer"
+          },
+          "presentBytes": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "description": "model or lora"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "license": {
+            "type": "string",
+            "description": "Declared licence."
+          },
+          "source": {
+            "type": "string",
+            "description": "Model page."
+          },
+          "repository": {
+            "type": "string",
+            "description": "Repository."
+          },
+          "revision": {
+            "type": "string",
+            "description": "Pinned revision."
+          },
+          "gated": {
+            "type": "boolean"
+          },
+          "licenseAccepted": {
+            "type": "boolean"
+          },
+          "baseModel": {
+            "type": "string",
+            "description": "Base model id, for an adapter."
+          },
+          "architecture": {
+            "type": "string",
+            "description": "Declared architecture."
+          },
+          "contextTokens": {
+            "type": "integer"
+          },
+          "ramGiB": {
+            "type": "integer"
+          },
+          "vramGiB": {
+            "type": "integer"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Notes."
+          },
+          "path": {
+            "type": "string",
+            "description": "Installed file path."
+          }
+        },
+        "required": [
+          "id",
+          "installed",
+          "sizeBytes",
+          "presentBytes",
+          "kind",
+          "name",
+          "license",
+          "source",
+          "repository",
+          "revision",
+          "gated",
+          "licenseAccepted",
+          "baseModel",
+          "architecture",
+          "contextTokens",
+          "ramGiB",
+          "vramGiB",
+          "notes",
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "id",
+          "type": "Value",
+          "description": "Entry id."
+        },
+        {
+          "id": "installed",
+          "type": "Value",
+          "description": "installed"
+        },
+        {
+          "id": "sizeBytes",
+          "type": "Value",
+          "description": "sizeBytes"
+        },
+        {
+          "id": "presentBytes",
+          "type": "Value",
+          "description": "presentBytes"
+        },
+        {
+          "id": "kind",
+          "type": "Value",
+          "description": "model or lora"
+        },
+        {
+          "id": "name",
+          "type": "Value",
+          "description": "Display name."
+        },
+        {
+          "id": "license",
+          "type": "Value",
+          "description": "Declared licence."
+        },
+        {
+          "id": "source",
+          "type": "Value",
+          "description": "Model page."
+        },
+        {
+          "id": "repository",
+          "type": "Value",
+          "description": "Repository."
+        },
+        {
+          "id": "revision",
+          "type": "Value",
+          "description": "Pinned revision."
+        },
+        {
+          "id": "gated",
+          "type": "Value",
+          "description": "gated"
+        },
+        {
+          "id": "licenseAccepted",
+          "type": "Value",
+          "description": "licenseAccepted"
+        },
+        {
+          "id": "baseModel",
+          "type": "Value",
+          "description": "Base model id, for an adapter."
+        },
+        {
+          "id": "architecture",
+          "type": "Value",
+          "description": "Declared architecture."
+        },
+        {
+          "id": "contextTokens",
+          "type": "Value",
+          "description": "contextTokens"
+        },
+        {
+          "id": "ramGiB",
+          "type": "Value",
+          "description": "ramGiB"
+        },
+        {
+          "id": "vramGiB",
+          "type": "Value",
+          "description": "vramGiB"
+        },
+        {
+          "id": "notes",
+          "type": "Value",
+          "description": "Notes."
+        },
+        {
+          "id": "path",
+          "type": "Value",
+          "description": "Installed file path."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "network"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true
+    },
+    {
+      "id": "model_repair",
+      "name": "Repair local weights",
+      "description": "Re-verify an entry and delete only the files whose digest does not match.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Catalogue entry id."
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Entry id."
+          },
+          "removedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "installed": {
+            "type": "boolean"
+          },
+          "repaired": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "removedFiles",
+          "installed",
+          "repaired"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "id",
+          "type": "Value",
+          "description": "Entry id."
+        },
+        {
+          "id": "removedFiles",
+          "type": "Value",
+          "description": "removedFiles"
+        },
+        {
+          "id": "installed",
+          "type": "Value",
+          "description": "installed"
+        },
+        {
+          "id": "repaired",
+          "type": "Value",
+          "description": "repaired"
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": false
+    },
+    {
+      "id": "model_uninstall",
+      "name": "Remove local weights",
+      "description": "Delete the files of a catalogue entry.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Catalogue entry id."
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Entry id."
+          },
+          "removedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "installed": {
+            "type": "boolean"
+          },
+          "libraryReferencesRemoved": {
+            "type": "integer",
+            "description": "Model library references dropped with the files."
+          }
+        },
+        "required": [
+          "id",
+          "removedFiles",
+          "installed",
+          "libraryReferencesRemoved"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "id",
+          "type": "Value",
+          "description": "Entry id."
+        },
+        {
+          "id": "removedFiles",
+          "type": "Value",
+          "description": "removedFiles"
+        },
+        {
+          "id": "installed",
+          "type": "Value",
+          "description": "installed"
+        },
+        {
+          "id": "libraryReferencesRemoved",
+          "type": "Value",
+          "description": "Model library references dropped with the files."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "engine_list",
+      "name": "List llama.cpp engines",
+      "description": "The pinned llama.cpp builds and which one is installed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "release": {
+            "type": "string",
+            "description": "Pinned release tag."
+          },
+          "repository": {
+            "type": "string",
+            "description": "Source repository."
+          },
+          "builds": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "notes": {
+            "type": "string",
+            "description": "Notes."
+          }
+        },
+        "required": [
+          "release",
+          "repository",
+          "builds",
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "release",
+          "type": "Value",
+          "description": "Pinned release tag."
+        },
+        {
+          "id": "repository",
+          "type": "Value",
+          "description": "Source repository."
+        },
+        {
+          "id": "builds",
+          "type": "Value",
+          "description": "builds"
+        },
+        {
+          "id": "notes",
+          "type": "Value",
+          "description": "Notes."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "engine_install",
+      "name": "Install a llama.cpp engine",
+      "description": "Download, verify and unpack a pinned llama.cpp build into runtime/engines.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "build": {
+            "type": "string",
+            "enum": [
+              "cpu",
+              "cuda"
+            ],
+            "default": "cpu"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Build id."
+          },
+          "name": {
+            "type": "string",
+            "description": "Build name."
+          },
+          "installed": {
+            "type": "boolean"
+          },
+          "path": {
+            "type": "string",
+            "description": "Server executable."
+          },
+          "version": {
+            "type": "string",
+            "description": "Release tag."
+          },
+          "release": {
+            "type": "string",
+            "description": "Pinned release."
+          },
+          "device": {
+            "type": "string",
+            "description": "cpu or cuda."
+          },
+          "platform": {
+            "type": "string",
+            "description": "Target platform."
+          },
+          "sizeBytes": {
+            "type": "integer"
+          },
+          "license": {
+            "type": "string",
+            "description": "Licence."
+          },
+          "source": {
+            "type": "string",
+            "description": "Release page."
+          },
+          "devices": {
+            "type": "string",
+            "description": "Device probe output, for CUDA."
+          },
+          "requires": {
+            "type": "string",
+            "description": "What this build needs."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "installed",
+          "path",
+          "version",
+          "release",
+          "device",
+          "platform",
+          "sizeBytes",
+          "license",
+          "source",
+          "devices",
+          "requires"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "id",
+          "type": "Value",
+          "description": "Build id."
+        },
+        {
+          "id": "name",
+          "type": "Value",
+          "description": "Build name."
+        },
+        {
+          "id": "installed",
+          "type": "Value",
+          "description": "installed"
+        },
+        {
+          "id": "path",
+          "type": "Value",
+          "description": "Server executable."
+        },
+        {
+          "id": "version",
+          "type": "Value",
+          "description": "Release tag."
+        },
+        {
+          "id": "release",
+          "type": "Value",
+          "description": "Pinned release."
+        },
+        {
+          "id": "device",
+          "type": "Value",
+          "description": "cpu or cuda."
+        },
+        {
+          "id": "platform",
+          "type": "Value",
+          "description": "Target platform."
+        },
+        {
+          "id": "sizeBytes",
+          "type": "Value",
+          "description": "sizeBytes"
+        },
+        {
+          "id": "license",
+          "type": "Value",
+          "description": "Licence."
+        },
+        {
+          "id": "source",
+          "type": "Value",
+          "description": "Release page."
+        },
+        {
+          "id": "devices",
+          "type": "Value",
+          "description": "Device probe output, for CUDA."
+        },
+        {
+          "id": "requires",
+          "type": "Value",
+          "description": "What this build needs."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "network",
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true
+    },
+    {
+      "id": "engine_remove",
+      "name": "Remove a llama.cpp engine",
+      "description": "Delete a build this Tool installed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "build": {
+            "type": "string",
+            "enum": [
+              "cpu",
+              "cuda"
+            ]
+          }
+        },
+        "required": [
+          "build"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Build id."
+          },
+          "removed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "removed"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "id",
+          "type": "Value",
+          "description": "Build id."
+        },
+        {
+          "id": "removed",
+          "type": "Value",
+          "description": "removed"
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "resident_status",
+      "name": "Local model status",
+      "description": "Whether a local model is loaded, on which device, with which adapters.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "resident": {
+            "type": "object",
+            "description": "Resident server state."
+          },
+          "adapters": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Adapters reported by the running server."
+          },
+          "properties": {
+            "type": "object",
+            "description": "Server properties, when loaded."
+          }
+        },
+        "required": [
+          "resident",
+          "adapters",
+          "properties"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "resident",
+          "type": "Object",
+          "description": "Resident server state."
+        },
+        {
+          "id": "adapters",
+          "type": "Value",
+          "description": "Adapters reported by the running server."
+        },
+        {
+          "id": "properties",
+          "type": "Object",
+          "description": "Server properties, when loaded."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "resident_unload",
+      "name": "Unload the local model",
+      "description": "Stop the local llama.cpp server and release its reservation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "stopped": {
+            "type": "boolean"
+          },
+          "resident": {
+            "type": "object",
+            "description": "State after stopping."
+          }
+        },
+        "required": [
+          "stopped",
+          "resident"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "stopped",
+          "type": "Value",
+          "description": "stopped"
+        },
+        {
+          "id": "resident",
+          "type": "Object",
+          "description": "State after stopping."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "lora_scale",
+      "name": "Change adapter strength",
+      "description": "Set LoRA strengths on the running local server without reloading the model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loras": {
+            "type": "array",
+            "default": [],
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "strength"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "strength": {
+                  "type": "number",
+                  "minimum": -4,
+                  "maximum": 4
+                }
+              }
+            },
+            "description": "Strengths in the order the adapters were loaded."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "adapters": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Adapters as the server reports them afterwards."
+          }
+        },
+        "required": [
+          "adapters"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "adapters",
+          "type": "Value",
+          "description": "Adapters as the server reports them afterwards."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "credential_status",
+      "name": "API key status",
+      "description": "Whether a key is configured for a provider and how it is protected. Never returns the key.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Provider id. Empty reports every provider that can take a key.",
+            "default": ""
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "credentials": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "One status per provider."
+          }
+        },
+        "required": [
+          "credentials"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "credentials",
+          "type": "Value",
+          "description": "One status per provider."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "credential_clear",
+      "name": "Remove an API key",
+      "description": "Delete a stored key.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Provider id."
+          }
+        },
+        "required": [
+          "provider"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "providerId": {
+            "type": "string",
+            "description": "Provider id."
+          },
+          "removed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "providerId",
+          "removed"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "providerId",
+          "type": "Value",
+          "description": "Provider id."
+        },
+        {
+          "id": "removed",
+          "type": "Value",
+          "description": "removed"
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "diagnostics",
+      "name": "Diagnostics",
+      "description": "One report covering providers, engines, weights, storage and the resident model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "object",
+            "description": "The diagnostic report."
+          },
+          "file": {
+            "type": "string",
+            "description": "Report file in the job workspace.",
+            "x-cy-kind": "File"
+          }
+        },
+        "required": [
+          "report",
+          "file"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "report",
+          "type": "Object",
+          "description": "The diagnostic report."
+        },
+        {
+          "id": "file",
+          "type": "File",
+          "description": "Report file in the job workspace."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "network",
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "update_check",
+      "name": "Check for updates",
+      "description": "Ask the configured GitHub sources what the application and the engine could move to.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stream": {
+            "type": "string",
+            "enum": [
+              "application",
+              "engine",
+              "all"
+            ],
+            "default": "all"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "streams": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "One entry per update stream."
+          }
+        },
+        "required": [
+          "streams"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "streams",
+          "type": "Value",
+          "description": "One entry per update stream."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "network"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": false
+    },
+    {
+      "id": "update_download",
+      "name": "Download an update",
+      "description": "Stage an update under runtime/updates and verify it there. Nothing is activated.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stream": {
+            "type": "string",
+            "enum": [
+              "application",
+              "engine"
+            ],
+            "default": "application"
+          },
+          "version": {
+            "type": "string",
+            "description": "Exact release tag to stage.",
+            "default": ""
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "staged": {
+            "type": "boolean"
+          },
+          "stream": {
+            "type": "string",
+            "description": "Stream staged."
+          },
+          "version": {
+            "type": "string",
+            "description": "Version staged."
+          },
+          "path": {
+            "type": "string",
+            "description": "Staging directory."
+          },
+          "report": {
+            "type": "object",
+            "description": "Verification details."
+          }
+        },
+        "required": [
+          "staged",
+          "stream",
+          "version",
+          "path",
+          "report"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "staged",
+          "type": "Value",
+          "description": "staged"
+        },
+        {
+          "id": "stream",
+          "type": "Value",
+          "description": "Stream staged."
+        },
+        {
+          "id": "version",
+          "type": "Value",
+          "description": "Version staged."
+        },
+        {
+          "id": "path",
+          "type": "Value",
+          "description": "Staging directory."
+        },
+        {
+          "id": "report",
+          "type": "Object",
+          "description": "Verification details."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "network"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true
+    },
+    {
+      "id": "update_apply",
+      "name": "Apply a staged update",
+      "description": "Activate a verified staged update, keeping the previous version for a rollback. data/ is never replaced.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stream": {
+            "type": "string",
+            "enum": [
+              "application",
+              "engine"
+            ],
+            "default": "application"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "applied": {
+            "type": "boolean"
+          },
+          "stream": {
+            "type": "string",
+            "description": "Stream applied."
+          },
+          "version": {
+            "type": "string",
+            "description": "Version now active."
+          },
+          "backup": {
+            "type": "string",
+            "description": "Kept previous version."
+          },
+          "restartRequired": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "applied",
+          "stream",
+          "version",
+          "backup",
+          "restartRequired"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "applied",
+          "type": "Value",
+          "description": "applied"
+        },
+        {
+          "id": "stream",
+          "type": "Value",
+          "description": "Stream applied."
+        },
+        {
+          "id": "version",
+          "type": "Value",
+          "description": "Version now active."
+        },
+        {
+          "id": "backup",
+          "type": "Value",
+          "description": "Kept previous version."
+        },
+        {
+          "id": "restartRequired",
+          "type": "Value",
+          "description": "restartRequired"
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true
+    },
+    {
+      "id": "update_rollback",
+      "name": "Roll back an update",
+      "description": "Restore the version kept before the last update.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stream": {
+            "type": "string",
+            "enum": [
+              "application",
+              "engine"
+            ],
+            "default": "application"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "restored": {
+            "type": "boolean"
+          },
+          "stream": {
+            "type": "string",
+            "description": "Stream restored."
+          },
+          "version": {
+            "type": "string",
+            "description": "Version restored."
+          },
+          "restartRequired": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "restored",
+          "stream",
+          "version",
+          "restartRequired"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "restored",
+          "type": "Value",
+          "description": "restored"
+        },
+        {
+          "id": "stream",
+          "type": "Value",
+          "description": "Stream restored."
+        },
+        {
+          "id": "version",
+          "type": "Value",
+          "description": "Version restored."
+        },
+        {
+          "id": "restartRequired",
+          "type": "Value",
+          "description": "restartRequired"
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true
+    },
+    {
+      "id": "update_settings",
+      "name": "Update sources",
+      "description": "Read or change the GitHub sources and the automatic check preference.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "application_repository": {
+            "type": "string",
+            "description": "owner/name of the application repository. Empty leaves it unchanged.",
+            "default": ""
+          },
+          "engine_repository": {
+            "type": "string",
+            "description": "owner/name of the engine repository.",
+            "default": ""
+          },
+          "automatic_check": {
+            "type": "string",
+            "enum": [
+              "",
+              "on",
+              "off"
+            ],
+            "default": "",
+            "description": "Turn the startup check on or off."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "settings": {
+            "type": "object",
+            "description": "The stored update settings."
+          }
+        },
+        "required": [
+          "settings"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "settings",
+          "type": "Object",
+          "description": "The stored update settings."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "model_library_list",
+      "name": "model_library_list",
+      "description": "List compatible model formats, device capabilities and registered local model/LoRA references.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "capabilities": {
+            "type": "object"
+          },
+          "library": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "urn:cytools:v1:model-library",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "schemaVersion",
+              "models"
+            ],
+            "properties": {
+              "schemaVersion": {
+                "const": 1
+              },
+              "models": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "name",
+                    "path",
+                    "format",
+                    "kind",
+                    "base",
+                    "license",
+                    "source",
+                    "validation"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "path": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "format": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "kind": {
+                      "enum": [
+                        "model",
+                        "lora"
+                      ]
+                    },
+                    "base": {
+                      "type": "string"
+                    },
+                    "license": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "validation": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "capabilities",
+          "library"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "capabilities",
+          "type": "Object",
+          "description": "capabilities"
+        },
+        {
+          "id": "library",
+          "type": "Object",
+          "description": "library"
+        }
+      ],
+      "platforms": [
+        {
+          "os": "Windows",
+          "architecture": "x64",
+          "status": "Supported",
+          "computeBackends": [
+            "CPU",
+            "CUDA"
+          ],
+          "tested": [
+            {
+              "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+              "device": "NVIDIA GeForce RTX 3090 24 GB",
+              "driver": "610.47",
+              "runtime": "Python 3.11.5, cytools-core 0.9.0, imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
+              "date": "2026-09-23",
+              "status": "Launcher, ImGui window in English and French, local GGUF turn on CUDA, GGUF LoRA load and live rescale, Codex app-server and cli-jsonl, Claude Code, Antigravity, Ollama on both of its transports, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures, the CLI, MCP and the pytest suite were executed. OpenCode, the paid HTTP APIs (OpenAI, OpenRouter, Anthropic) and a real GitHub release of this application were not."
+            }
+          ]
+        },
+        {
+          "os": "Linux",
+          "architecture": "x64",
+          "status": "Experimental",
+          "computeBackends": [
+            "CPU",
+            "CUDA"
+          ]
+        },
+        {
+          "os": "macOS",
+          "architecture": "ARM64",
+          "status": "Unknown",
+          "computeBackends": [
+            "CPU"
+          ]
+        }
+      ],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false,
+      "supportedBackends": [],
+      "permissions": [],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      }
+    },
+    {
+      "id": "model_library_register",
+      "name": "model_library_register",
+      "description": "Register an existing compatible local model or LoRA by reference; does not download or copy weights. Registration is shared by clients of this local Tool.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name"
+          },
+          "path": {
+            "type": "string",
+            "description": "Absolute local path visible on the Tool host"
+          },
+          "format": {
+            "type": "string",
+            "description": "Format ID from model_library_list"
+          },
+          "base": {
+            "type": "string",
+            "description": "Compatible base variant ID"
+          },
+          "license": {
+            "type": "string",
+            "description": "License identifier or terms"
+          },
+          "source": {
+            "type": "string",
+            "description": "Original source URL or repository"
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "format"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "path",
+              "format",
+              "kind",
+              "base",
+              "license",
+              "source",
+              "validation"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "format": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "model",
+                  "lora"
+                ]
+              },
+              "base": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "validation": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "model",
+          "type": "Object",
+          "description": "model"
+        }
+      ],
+      "platforms": [
+        {
+          "os": "Windows",
+          "architecture": "x64",
+          "status": "Supported",
+          "computeBackends": [
+            "CPU",
+            "CUDA"
+          ],
+          "tested": [
+            {
+              "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+              "device": "NVIDIA GeForce RTX 3090 24 GB",
+              "driver": "610.47",
+              "runtime": "Python 3.11.5, cytools-core 0.9.0, imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
+              "date": "2026-09-23",
+              "status": "Launcher, ImGui window in English and French, local GGUF turn on CUDA, GGUF LoRA load and live rescale, Codex app-server and cli-jsonl, Claude Code, Antigravity, Ollama on both of its transports, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures, the CLI, MCP and the pytest suite were executed. OpenCode, the paid HTTP APIs (OpenAI, OpenRouter, Anthropic) and a real GitHub release of this application were not."
+            }
+          ]
+        },
+        {
+          "os": "Linux",
+          "architecture": "x64",
+          "status": "Experimental",
+          "computeBackends": [
+            "CPU",
+            "CUDA"
+          ]
+        },
+        {
+          "os": "macOS",
+          "architecture": "ARM64",
+          "status": "Unknown",
+          "computeBackends": [
+            "CPU"
+          ]
+        }
+      ],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false,
+      "supportedBackends": [],
+      "permissions": [],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      }
+    }
+  ]
+}

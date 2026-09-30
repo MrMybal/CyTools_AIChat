@@ -1,0 +1,42 @@
+# What is published is the application: app/, the launchers' sources and the user guide.
+# Everything that belongs to the person using the Tool, or to this machine, stays local.
+
+# User data: conversations and their backups, presets, jobs, logs, exports, settings
+# (including the sealed API keys and the licence acceptances), reports and screenshots —
+# and the models, which are downloaded or imported from the interface, never shipped.
+/data/
+
+# The private Python environment, the llama.cpp engines, downloads, staged updates,
+# backups and the launcher build output.
+/runtime/
+
+# Built binaries: the launcher is built by app/build_launcher.ps1 and attached to a release.
+*.exe
+*.dll
+*.pdb
+*.obj
+
+# Python and test caches.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.cytools/
+
+# Weights never enter the repository, wherever they land.
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.onnx
+
+# Local and editor files.
+.env
+.env.*
+*.log
+*.tmp
+*.bak
+*.importing
+.vscode/
+.idea/

@@ -1,0 +1,47 @@
+{
+  "release": "b11114",
+  "repository": "ggml-org/llama.cpp",
+  "notes": "Pinned llama.cpp release. Sizes and SHA-256 come from the GitHub release assets of tag b11114 and are verified before an engine is recorded as installed. The Linux builds are declared, not executed by this project: see app/Docs/CapabilityCoverage.md.",
+  "builds": {
+    "cpu": {
+      "name": "llama.cpp CPU (Windows x64)",
+      "device": "cpu",
+      "platform": "windows-x64",
+      "release": "b11114",
+      "license": "MIT",
+      "source": "https://github.com/ggml-org/llama.cpp/releases/tag/b11114",
+      "requires": "No GPU. Slower, but works on any x64 machine.",
+      "assets": [
+        {
+          "name": "llama-b11114-bin-win-cpu-x64.zip",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11114/llama-b11114-bin-win-cpu-x64.zip",
+          "size": 18558130,
+          "sha256": "39b54eefa1bdd8d6352cbdd4c1e7313c94fb9e07904e062effc0f74e87dad2b7"
+        }
+      ]
+    },
+    "cuda": {
+      "name": "llama.cpp CUDA 12.4 (Windows x64)",
+      "device": "cuda",
+      "platform": "windows-x64",
+      "release": "b11114",
+      "license": "MIT",
+      "source": "https://github.com/ggml-org/llama.cpp/releases/tag/b11114",
+      "requires": "An NVIDIA GPU with a driver supporting CUDA 12.4. Recorded as installed only after llama-server --list-devices reports a CUDA device.",
+      "assets": [
+        {
+          "name": "llama-b11114-bin-win-cuda-12.4-x64.zip",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11114/llama-b11114-bin-win-cuda-12.4-x64.zip",
+          "size": 253782365,
+          "sha256": "e49470c0f23434156020bcebd59dda4abeea3f1a158a0bb3577b13ae0f89173a"
+        },
+        {
+          "name": "cudart-llama-bin-win-cuda-12.4-x64.zip",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11114/cudart-llama-bin-win-cuda-12.4-x64.zip",
+          "size": 391443627,
+          "sha256": "8c79a9b226de4b3cacfd1f83d24f962d0773be79f1e7b75c6af4ded7e32ae1d6"
+        }
+      ]
+    }
+  }
+}

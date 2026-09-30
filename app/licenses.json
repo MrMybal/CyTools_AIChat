@@ -1,0 +1,58 @@
+[
+  {
+    "kind": "Engine",
+    "name": "llama.cpp (b11114, Windows x64 CPU and CUDA 12.4 builds)",
+    "license": "MIT",
+    "url": "https://github.com/ggml-org/llama.cpp/blob/master/LICENSE",
+    "notes": "Downloaded from the pinned GitHub release into runtime/engines. The CUDA build also carries NVIDIA CUDA runtime libraries, redistributed under the NVIDIA CUDA Toolkit end user licence agreement."
+  },
+  {
+    "kind": "Engine",
+    "name": "NVIDIA CUDA runtime libraries (cudart 12.4)",
+    "license": "NVIDIA CUDA Toolkit EULA",
+    "url": "https://docs.nvidia.com/cuda/eula/index.html",
+    "notes": "Shipped inside the llama.cpp CUDA release asset. Redistribution terms are NVIDIA's, not this Tool's."
+  },
+  {
+    "kind": "Component",
+    "name": "cyai_connectors (vendored from CyAI Connector Lab)",
+    "license": "Not declared",
+    "url": "",
+    "notes": "A copy of the portable connector library used for the Codex, Claude Code, Antigravity and OpenCode adapters. Its source project declares no licence."
+  },
+  {
+    "kind": "Component",
+    "name": "Agent command lines (codex, claude, agy, opencode)",
+    "license": "Each publisher's own terms",
+    "url": "",
+    "notes": "Not redistributed with this Tool. It starts the programs already installed on the machine, under the account already signed in there, and their own terms of use apply."
+  },
+  {
+    "kind": "Model",
+    "name": "Qwen3 4B, Qwen3 8B, Qwen2.5 1.5B Instruct (GGUF)",
+    "license": "apache-2.0",
+    "url": "https://huggingface.co/Qwen",
+    "notes": "Downloaded on request into data/models. Read the licence on each model page."
+  },
+  {
+    "kind": "Model",
+    "name": "Llama 3.2 3B Instruct (GGUF)",
+    "license": "Llama 3.2 Community License",
+    "url": "https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct",
+    "notes": "Not an open-source licence. It carries acceptable use and redistribution conditions you must read before using the model."
+  },
+  {
+    "kind": "Model",
+    "name": "Mistral 7B Instruct v0.3 (GGUF)",
+    "license": "apache-2.0",
+    "url": "https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3",
+    "notes": "Downloaded on request into data/models."
+  },
+  {
+    "kind": "Model",
+    "name": "LoRA-Qwen2.5-1.5B-Instruct-abliterated (GGUF LoRA)",
+    "license": "Not declared",
+    "url": "https://huggingface.co/ggml-org/LoRA-Qwen2.5-1.5B-Instruct-abliterated-F16-GGUF",
+    "notes": "The repository declares no licence, so its terms are unknown. It is included because it is a published GGUF adapter that makes a real LoRA test possible."
+  }
+]

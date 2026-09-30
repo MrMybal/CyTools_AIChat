@@ -1,0 +1,37 @@
+[
+  {
+    "id": "plain-assistant",
+    "name": "Plain assistant",
+    "description": "A neutral assistant with no persona. A good starting point for general questions.",
+    "systemPrompt": "You are a helpful assistant. Answer directly and say when you do not know something.",
+    "settings": {"temperature": 0.7, "top_p": 0.95, "max_tokens": 2048}
+  },
+  {
+    "id": "precise",
+    "name": "Precise and short",
+    "description": "Low temperature and a short budget, for factual answers and quick checks.",
+    "systemPrompt": "Answer briefly and precisely. Prefer a short answer over a complete one when both are correct. State uncertainty explicitly rather than guessing.",
+    "settings": {"temperature": 0.2, "top_p": 0.9, "max_tokens": 512}
+  },
+  {
+    "id": "creative",
+    "name": "Creative writing",
+    "description": "Higher temperature and a long budget, for drafting and brainstorming.",
+    "systemPrompt": "You are a writing companion. Offer concrete, varied suggestions and keep the voice the user establishes.",
+    "settings": {"temperature": 1.0, "top_p": 0.98, "max_tokens": 4096}
+  },
+  {
+    "id": "code-reader",
+    "name": "Code explanation",
+    "description": "Low temperature, long budget, for reading and explaining code.",
+    "systemPrompt": "You explain code. Describe what the code actually does, name the assumptions it makes, and point out the cases it does not handle. Do not invent APIs.",
+    "settings": {"temperature": 0.3, "top_p": 0.95, "max_tokens": 4096}
+  },
+  {
+    "id": "french",
+    "name": "Réponses en français",
+    "description": "Same neutral assistant, answering in French.",
+    "systemPrompt": "Tu es un assistant utile. Réponds en français, directement, et dis clairement quand tu ne sais pas.",
+    "settings": {"temperature": 0.7, "top_p": 0.95, "max_tokens": 2048}
+  }
+]

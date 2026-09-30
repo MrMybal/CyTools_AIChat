@@ -1,0 +1,24 @@
+{
+  "operations": {
+    "chat": {
+      "models": ["gguf-model"],
+      "loras": ["gguf-lora"],
+      "devices": ["auto", "cpu", "cuda"],
+      "notes": "Model references and LoRA adapters apply to the local llama.cpp provider only. A remote provider loads its own weights, so this Tool cannot attach an adapter to it."
+    }
+  },
+  "formats": {
+    "gguf-model": {
+      "kind": "model",
+      "suffix": ".gguf",
+      "label": "GGUF model for llama.cpp",
+      "notes": "A single .gguf file. Its header is read to confirm the format; compatibility with a given adapter is still decided by the loader."
+    },
+    "gguf-lora": {
+      "kind": "lora",
+      "suffix": ".gguf",
+      "label": "GGUF LoRA adapter for llama.cpp",
+      "notes": "A .gguf whose metadata declares adapter.type=lora. Converted from a PEFT adapter with convert_lora_to_gguf.py, or downloaded already converted. llama.cpp refuses an adapter whose tensors do not match the loaded model."
+    }
+  }
+}

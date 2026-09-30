@@ -1,0 +1,7 @@
+{
+  "message": "In one sentence, what is a GGUF file?",
+  "provider": "llamacpp",
+  "model": "qwen25-1_5b",
+  "max_tokens": 120,
+  "temperature": 0.3
+}
