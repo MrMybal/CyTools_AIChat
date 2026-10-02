@@ -1,5 +1,12 @@
 [
   {
+    "kind": "Component",
+    "name": "CyToolsCore SDK 0.10.1",
+    "license": "MIT",
+    "url": "https://github.com/MrMybal/CyToolsCore",
+    "notes": "Copyright (c) 2026 Cyberalien. Runtime, transports and the scaffolded interface files in app/. Full text in LICENCES/CyToolsCore-MIT.txt and app/LICENSE-CyToolsCore.txt; installed from the public repository at the commit pinned in app/requirements.txt."
+  },
+  {
     "kind": "Engine",
     "name": "llama.cpp (b11114, Windows x64 CPU and CUDA 12.4 builds)",
     "license": "MIT",

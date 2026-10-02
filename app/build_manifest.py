@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 APP = Path(__file__).resolve().parent
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 
 PROVIDERS = [
     ('codex', 'Codex (agent CLI, your ChatGPT sign-in)'),
@@ -52,6 +52,21 @@ SAMPLING = {
                        'description': 'Context window requested when loading a local model. Changing it restarts the local server.'},
     'history_limit': {'type': 'integer', 'minimum': 0, 'maximum': 1000,
                       'description': 'Send only the last N stored messages to a stateless provider. 0 sends the whole conversation. A session provider keeps its own history and ignores this.'},
+}
+
+
+# Operations that must not overlap, enforced by the SDK scheduler (CyToolsCore 0.10.0 or
+# later). Each set works on the same files: two of them running together would have one
+# delete or replace what the other is writing or verifying.
+#
+# `chat` is deliberately in no group. A group is held per operation, not per provider, so
+# putting turns in one would serialise every tab, including those talking to different
+# remote providers. Turns on the local model are serialised where the constraint really
+# is: one slot on the llama.cpp server, guarded by the local provider itself.
+EXCLUSIVE_GROUPS = {
+    'model-files': ('model_install', 'model_repair', 'model_uninstall'),
+    'engine-files': ('engine_install', 'engine_remove'),
+    'application-update': ('update_download', 'update_apply', 'update_rollback'),
 }
 
 
@@ -395,6 +410,10 @@ def operations():
         [], {'settings': {'type': 'object', 'description': 'The stored update settings.'}},
         cancel=False))
 
+    for group, members in EXCLUSIVE_GROUPS.items():
+        for item in items:
+            if item['id'] in members:
+                item.setdefault('exclusiveGroups', []).append(group)
     return items
 
 

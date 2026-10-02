@@ -3,7 +3,7 @@
   "protocolVersion": "1.0",
   "id": "cy.tool.aichat",
   "name": "CyTools_AIChat",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A chat engine for connected agent CLIs, HTTP model APIs and local GGUF models with LoRA adapters. Conversations are kept on disk and opened in tabs in the standalone window.",
   "vendor": "Cyberalien",
   "author": "Cyberalien",
@@ -50,6 +50,14 @@
           "runtime": "Python 3.11.5, cytools-core 0.9.0, imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
           "date": "2026-09-23",
           "status": "Launcher, ImGui window in English and French, local GGUF turn on CUDA, GGUF LoRA load and live rescale, Codex app-server and cli-jsonl, Claude Code, Antigravity, Ollama on both of its transports, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures, the CLI, MCP and the pytest suite were executed. OpenCode, the paid HTTP APIs (OpenAI, OpenRouter, Anthropic) and a real GitHub release of this application were not."
+        },
+        {
+          "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+          "device": "NVIDIA GeForce RTX 3090 24 GB",
+          "driver": "610.47",
+          "runtime": "Python 3.11.5, cytools-core 0.10.1 (MIT), imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
+          "date": "2026-10-02",
+          "status": "Re-run after the move to CyToolsCore 0.10.1, application 0.1.1: launcher started from another directory with the existing configuration (Chat, Updates and Options tabs, English), the CLI (describe, diagnostics), a real MCP session with two local GGUF turns, GGUF LoRA load and live rescale on CUDA, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures including the licence notices, the release archive build and its verification, and the pytest suite. Not re-run with this SDK version: Codex, Claude Code, Antigravity, Ollama and the French window. OpenCode, the paid HTTP APIs and a real GitHub release remain not executed."
         }
       ]
     },
@@ -1437,7 +1445,10 @@
       ],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "model-files"
+      ]
     },
     {
       "id": "model_repair",
@@ -1514,7 +1525,10 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": [
+        "model-files"
+      ]
     },
     {
       "id": "model_uninstall",
@@ -1592,7 +1606,10 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": [
+        "model-files"
+      ]
     },
     {
       "id": "engine_list",
@@ -1834,7 +1851,10 @@
       ],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "engine-files"
+      ]
     },
     {
       "id": "engine_remove",
@@ -1893,7 +1913,10 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": [
+        "engine-files"
+      ]
     },
     {
       "id": "resident_status",
@@ -2382,7 +2405,10 @@
       ],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "application-update"
+      ]
     },
     {
       "id": "update_apply",
@@ -2469,7 +2495,10 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "application-update"
+      ]
     },
     {
       "id": "update_rollback",
@@ -2546,7 +2575,10 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "application-update"
+      ]
     },
     {
       "id": "update_settings",
@@ -2729,6 +2761,14 @@
               "runtime": "Python 3.11.5, cytools-core 0.9.0, imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
               "date": "2026-09-23",
               "status": "Launcher, ImGui window in English and French, local GGUF turn on CUDA, GGUF LoRA load and live rescale, Codex app-server and cli-jsonl, Claude Code, Antigravity, Ollama on both of its transports, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures, the CLI, MCP and the pytest suite were executed. OpenCode, the paid HTTP APIs (OpenAI, OpenRouter, Anthropic) and a real GitHub release of this application were not."
+            },
+            {
+              "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+              "device": "NVIDIA GeForce RTX 3090 24 GB",
+              "driver": "610.47",
+              "runtime": "Python 3.11.5, cytools-core 0.10.1 (MIT), imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
+              "date": "2026-10-02",
+              "status": "Re-run after the move to CyToolsCore 0.10.1, application 0.1.1: launcher started from another directory with the existing configuration (Chat, Updates and Options tabs, English), the CLI (describe, diagnostics), a real MCP session with two local GGUF turns, GGUF LoRA load and live rescale on CUDA, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures including the licence notices, the release archive build and its verification, and the pytest suite. Not re-run with this SDK version: Codex, Claude Code, Antigravity, Ollama and the French window. OpenCode, the paid HTTP APIs and a real GitHub release remain not executed."
             }
           ]
         },
@@ -2883,6 +2923,14 @@
               "runtime": "Python 3.11.5, cytools-core 0.9.0, imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
               "date": "2026-09-23",
               "status": "Launcher, ImGui window in English and French, local GGUF turn on CUDA, GGUF LoRA load and live rescale, Codex app-server and cli-jsonl, Claude Code, Antigravity, Ollama on both of its transports, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures, the CLI, MCP and the pytest suite were executed. OpenCode, the paid HTTP APIs (OpenAI, OpenRouter, Anthropic) and a real GitHub release of this application were not."
+            },
+            {
+              "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+              "device": "NVIDIA GeForce RTX 3090 24 GB",
+              "driver": "610.47",
+              "runtime": "Python 3.11.5, cytools-core 0.10.1 (MIT), imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
+              "date": "2026-10-02",
+              "status": "Re-run after the move to CyToolsCore 0.10.1, application 0.1.1: launcher started from another directory with the existing configuration (Chat, Updates and Options tabs, English), the CLI (describe, diagnostics), a real MCP session with two local GGUF turns, GGUF LoRA load and live rescale on CUDA, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures including the licence notices, the release archive build and its verification, and the pytest suite. Not re-run with this SDK version: Codex, Claude Code, Antigravity, Ollama and the French window. OpenCode, the paid HTTP APIs and a real GitHub release remain not executed."
             }
           ]
         },

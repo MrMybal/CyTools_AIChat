@@ -53,10 +53,10 @@ class Resident:
     def state(self):
         """The vocabulary the Core's worker registry expects, alongside `release`.
 
-        `Runtime.status()` reads `.state` on every registered worker, so a worker that only
-        implements `release` makes the whole status call fail. A loaded server is reported
-        as Busy because it is holding a reservation, which is exactly what the status is
-        being asked about.
+        `Runtime.status()` decides whether a worker is active from its `process` first and
+        from `.state` otherwise (CyToolsCore 0.10), so both are kept consistent here. A
+        loaded server is reported as Busy because it is holding a reservation, which is
+        exactly what the status is being asked about.
         """
         with self.lock:
             if self.process is None:

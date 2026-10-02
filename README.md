@@ -91,6 +91,8 @@ go through the one runtime, and the local model loaded for one is the one the ot
 CyTools_AIChat.exe      Windows launcher (built locally, not in git)
 CyTools_AIChat.sh       Linux launcher (never executed by the author)
 LISEZ-MOI.md            user guide (French)
+LICENSE                 licence of the Tool's own code (GPL-3.0-only)
+LICENCES/               licence texts and source links of the included components
 app/                    code, manifest (CyTool.json), interface, providers, tests, scripts, docs
 data/                   conversations, presets, models, jobs, logs, exports, reports (not in git)
 runtime/                private Python, llama.cpp engines, downloads, staged updates (not in git)
@@ -103,8 +105,26 @@ then `.\runtime\python\Scripts\python.exe -m pytest app\tests -q`. The acceptanc
 
 ## Licence
 
-Free software under the **GNU General Public License v3.0 only** ([LICENSE](LICENSE)), like the
-CyToolsCore SDK it is built on. This covers the code and the interface. The vendored connector
-library, the llama.cpp engine, the agent command lines and every model weight keep their own
-licences, listed in [app/licenses.json](app/licenses.json), in the model catalogue and in the
-Options tab; the Models tab asks for your acceptance before downloading.
+The Tool's own code and interface are free software under the **GNU General Public License
+v3.0 only** ([LICENSE](LICENSE)).
+
+It is built on the CyToolsCore SDK 0.10.1, which is under the **MIT** licence. The full
+text and the source links of every included component are in [LICENCES/](LICENCES): they
+ship with the product, in the release archive as well as in this repository.
+
+The llama.cpp engine, the agent command lines and every model weight are not part of the
+product: they are installed or downloaded on your machine under their own licences, listed
+in [app/licenses.json](app/licenses.json), in the model catalogue and in the Options tab.
+The Models tab asks for your acceptance before downloading.
+
+## Updating and going back
+
+- **From source**: `git pull`, then
+  `.\runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt`. The second
+  command is what moves the SDK: version 0.1.1 needs CyToolsCore 0.10.1, and replacing
+  `app/` alone would leave the previous SDK in `runtime/python`.
+- **From a release**: the Updates tab stages the archive, verifies it and activates it at
+  your request. An archive built for another runtime is refused rather than half-applied.
+  `data/` is never replaced.
+- **Going back**: *Roll back* in the Updates tab restores the previous `app/` and licence
+  files. From source, check out the earlier commit and run the same `pip install` again.

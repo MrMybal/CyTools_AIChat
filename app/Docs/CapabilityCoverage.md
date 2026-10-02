@@ -1,4 +1,4 @@
-# Couverture des capacités — CyTools_AIChat 0.1.0
+# Couverture des capacités — CyTools_AIChat 0.1.1
 
 Ce document est la matrice exigée par `Docs/FullOperationAccess.md`. Il sépare trois états
 qui ne doivent jamais être confondus : **implémenté et testé** sur cette machine,
@@ -8,6 +8,16 @@ Machine de test : Windows 10 Enterprise LTSC 2021 (19044), Python 3.11.5, NVIDIA
 24 Go (pilote 610.47), llama.cpp b11114 CUDA 12.4, cytools-core 0.9.0, imgui-bundle 1.92.900,
 Ollama avec `qwen3:0.6b`, codex-cli 0.155.0, claude-code 2.1.276, Antigravity `agy`.
 Date des exécutions : 2026-09-23. Les preuves sont dans `data/reports/`.
+
+**Passage à cytools-core 0.10.1 (MIT), application 0.1.1 — réexécuté le 2026-10-02** sur la
+même machine : lanceur démarré depuis un autre dossier avec la configuration existante
+(onglets Chat, Mises à jour, Options), CLI (`describe`, `diagnostics`), session MCP réelle avec
+deux tours sur un modèle GGUF local, LoRA GGUF (chargement et poids modifié à chaud) sur CUDA,
+point d'accès OpenAI-compatible, annulation d'une inférence en cours, mécanisme de mise à
+jour sur maquettes (dont le refus d'une archive sans `LICENCES/` et le déploiement des
+notices), construction et vérification de l'archive de release, suite pytest. **Non
+réexécuté avec cette version du SDK** : Codex, Claude Code, Antigravity, Ollama et la fenêtre
+en français ; leurs lignes « Testé » ci-dessous datent du 2026-09-23, sous cytools-core 0.9.0.
 
 ## 1. Fournisseurs
 

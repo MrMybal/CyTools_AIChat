@@ -46,6 +46,17 @@ qu'un modèle résident, dans le processus du runtime.
   données.
 - **Les CLI d'agent sont ouvertes en lecture seule**, demandes d'autorisation refusées. Cet
   outil sert à parler au modèle, pas à le laisser agir sur la machine.
+- **Groupes d'exclusivité (CyToolsCore 0.10).** `build_manifest.py` déclare
+  `exclusiveGroups` pour les opérations qui travaillent sur les mêmes fichiers :
+  `model-files`, `engine-files`, `application-update`. C'est le scheduler du SDK qui les
+  sérialise ; ne pas ajouter de file d'attente dans les handlers. `chat` n'appartient à
+  aucun groupe : un groupe vaut pour l'opération entière et sérialiserait tous les
+  onglets. Seuls les tours du modèle local sont sérialisés, par le fournisseur local, parce
+  que le serveur llama.cpp n'a qu'un slot.
+- **`LICENCES/` fait partie du produit livré.** `LICENCES/CyToolsCore-MIT.txt` est la copie
+  inchangée de la licence du SDK installé, `LICENCES/SOURCES.txt` liste les sources ;
+  l'archive de release les embarque avec `LICENSE`, l'updater refuse une archive qui ne les
+  contient pas et les déploie à côté de `app/`. Textes de licence en anglais.
 
 ## Interface
 

@@ -565,3 +565,91 @@ def test_provider_inventory_reports_every_declared_provider(runtime):
     assert {row['id'] for row in reports} == declared
     for row in reports:
         assert 'status' in row and 'available' in row
+
+
+# --------------------------------------------------------------------------- CyToolsCore 0.10
+
+def test_installed_sdk_is_the_mit_release():
+    import importlib.metadata as metadata
+    distribution = metadata.distribution('cytools-core')
+    version = tuple(int(part) for part in distribution.version.split('.')[:3])
+    assert version >= (0, 10, 1), 'exclusion groups and the MIT notices need CyToolsCore 0.10.1'
+    declared = (distribution.metadata.get('License-Expression')
+                or distribution.metadata.get('License') or '')
+    assert 'MIT' in declared
+
+
+def test_release_verification_requires_the_licence_notices(tmp_path):
+    staged = tmp_path / 'staged/app'
+    staged.mkdir(parents=True)
+    for name in ('CyTool.json', 'release.json'):
+        (staged / name).write_text((APP / name).read_text('utf-8'), encoding='utf-8')
+    (staged / 'tool.py').write_text('', encoding='utf-8')
+    (staged / 'desktop.py').write_text('', encoding='utf-8')
+    with pytest.raises(CyToolError) as error:
+        maintenance.verify_application_tree(tmp_path / 'staged')
+    assert error.value.code == 'InvalidArchive' and 'LICENCES' in str(error.value)
+    notices = tmp_path / 'staged/LICENCES'
+    notices.mkdir()
+    for name in maintenance.REQUIRED_NOTICES:
+        (notices / name).write_text('notice', encoding='utf-8')
+    report = maintenance.verify_application_tree(tmp_path / 'staged')
+    assert set(maintenance.REQUIRED_NOTICES) <= set(report['notices'])
+
+
+def test_maintenance_operations_declare_exclusive_groups_and_chat_does_not():
+    document = load_manifest(APP / 'CyTool.json')
+    groups = {op['id']: set(op.get('exclusiveGroups', [])) for op in document['operations']}
+    assert groups['model_install'] & groups['model_repair'] & groups['model_uninstall']
+    assert groups['engine_install'] & groups['engine_remove']
+    assert groups['update_download'] & groups['update_apply'] & groups['update_rollback']
+    # Turns stay out of every group: tabs talking to different providers run together.
+    assert not groups['chat']
+
+
+def test_operations_sharing_a_group_never_overlap(runtime, monkeypatch):
+    from aichat import catalog, library
+    spans = []
+
+    def slow(label, result):
+        def run(*args, **kwargs):
+            started = time.monotonic()
+            time.sleep(0.4)
+            spans.append((started, time.monotonic(), label))
+            return dict(result)
+        return run
+
+    monkeypatch.setattr(catalog, 'repair', slow('repair', {
+        'id': 'qwen25-1_5b', 'removedFiles': [], 'installed': True, 'repaired': False}))
+    monkeypatch.setattr(catalog, 'uninstall', slow('uninstall', {
+        'id': 'qwen25-1_5b', 'removedFiles': [], 'installed': False}))
+    monkeypatch.setattr(catalog, 'file_path', lambda identifier: Path('unused'))
+    monkeypatch.setattr(library, 'unregister_path', lambda path: 0)
+    actor, session = client(runtime)
+    first = runtime.submit(actor, session, 'model_repair', {'model': 'qwen25-1_5b'})
+    second = runtime.submit(actor, session, 'model_uninstall', {'model': 'qwen25-1_5b'})
+    for job in (first, second):
+        final = runtime.wait(actor, job['jobId'], timeout=30)
+        assert final['state'] == 'Completed', final.get('error')
+    (_, first_end, _), (second_start, _, _) = sorted(spans)
+    assert second_start >= first_end, 'two operations of the same group ran at the same time'
+
+
+def test_turns_in_different_tabs_still_run_together(runtime):
+    spans = []
+
+    class Timed(StubProvider):
+        def chat(self, request, on_delta):
+            started = time.monotonic()
+            time.sleep(0.4)
+            spans.append((started, time.monotonic()))
+            return ChatResult('ok', model=request.model, transport='local-server', seconds=0.4)
+
+    runtime.aichat.providers['llamacpp'] = Timed(STATELESS)
+    actor, session = client(runtime)
+    jobs = [runtime.submit(actor, session, 'chat', {'message': 'x', 'provider': 'llamacpp'})
+            for _ in range(2)]
+    for job in jobs:
+        assert runtime.wait(actor, job['jobId'], timeout=30)['state'] == 'Completed'
+    (_, first_end), (second_start, _) = sorted(spans)
+    assert second_start < first_end, 'turns were serialised: tabs no longer talk at the same time'

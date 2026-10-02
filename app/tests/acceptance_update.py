@@ -11,7 +11,9 @@ against a real zip it builds itself:
   * an archive containing a path traversal is refused;
   * an archive belonging to another Tool is refused;
   * an archive declaring a different runtime ABI is refused;
-  * an archive whose code does not compile is refused.
+  * an archive whose code does not compile is refused;
+  * an archive without its licence notices is refused;
+  * the licence and the notices are deployed beside app/ and restored by a rollback.
 
 Everything happens inside a temporary copy of `app/`, never on the installation running the
 script, so a failure here cannot damage the Tool.
@@ -63,7 +65,7 @@ class Context:
 
 
 def build_release(destination, source_app, version, *, tool_id=None, runtime_abi=None,
-                  traversal=False, broken_code=False):
+                  traversal=False, broken_code=False, notices=True):
     """Write a release zip shaped the way the Tool expects: an app/ directory at its root."""
     manifest = json.loads((source_app / 'CyTool.json').read_text('utf-8'))
     manifest['version'] = version
@@ -84,6 +86,12 @@ def build_release(destination, source_app, version, *, tool_id=None, runtime_abi
             bundle.writestr('app/broken_module.py', 'def oops(:\n')
         if traversal:
             bundle.writestr('../escaped.txt', 'this must never be written')
+        if notices:
+            bundle.writestr('LICENSE', 'licence text of release %s' % version)
+            for name in maintenance.REQUIRED_NOTICES:
+                source = ROOT / 'LICENCES' / name
+                bundle.writestr('LICENCES/' + name,
+                                source.read_bytes() if source.is_file() else b'notice')
     return destination
 
 
@@ -125,6 +133,7 @@ def main():
         keepsake = tree / 'data/conversations/keep-me.json'
         keepsake.write_text('{"proof": "data must survive an update"}', encoding='utf-8')
         (tree / 'runtime').mkdir()
+        (tree / 'LICENSE').write_text('licence text of the installed version', encoding='utf-8')
 
         original_app, original_root = paths.APP, paths.ROOT
         original_data, original_runtime = paths.DATA, paths.RUNTIME
@@ -147,11 +156,19 @@ def main():
             report['installedVersionAfterApply'] = maintenance.current_version()
             report['dataSurvivedApply'] = keepsake.is_file()
             report['backupKept'] = Path(applied['backup']).is_dir()
+            report['noticesDeployed'] = all((tree / 'LICENCES' / name).is_file()
+                                            for name in maintenance.REQUIRED_NOTICES)
+            report['licenceReplaced'] = (tree / 'LICENSE').read_text('utf-8') == \
+                'licence text of release 9.9.9'
 
             restored = maintenance.rollback(Context(), None, 'application')
             report['rolledBack'] = restored
             report['installedVersionAfterRollback'] = maintenance.current_version()
             report['dataSurvivedRollback'] = keepsake.is_file()
+            report['licenceRestored'] = (tree / 'LICENSE').read_text('utf-8') == \
+                'licence text of the installed version'
+            # The notices did not exist before the update: a rollback leaves them in place.
+            report['noticesKeptAfterRollback'] = (tree / 'LICENCES/SOURCES.txt').is_file()
 
             traversal = build_release(tree / 'traversal.zip', APP, '9.9.8', traversal=True)
             report['traversalRefused'] = refused(
@@ -167,6 +184,9 @@ def main():
 
             broken = build_release(tree / 'broken.zip', APP, '9.9.5', broken_code=True)
             report['brokenCodeRefused'] = refused(stage, tree, broken)
+
+            bare = build_release(tree / 'bare.zip', APP, '9.9.4', notices=False)
+            report['missingNoticesRefused'] = refused(stage, tree, bare)
         finally:
             paths.APP, paths.ROOT = original_app, original_root
             paths.DATA, paths.RUNTIME = original_data, original_runtime
@@ -177,8 +197,11 @@ def main():
         if report['installedVersionAfterApply'] == '9.9.9'
         and report['installedVersionAfterRollback'] == report['installedVersionBefore']
         and report['dataSurvivedApply'] and report['dataSurvivedRollback']
+        and report['noticesDeployed'] and report['licenceReplaced']
+        and report['licenceRestored'] and report['noticesKeptAfterRollback']
         and all(report[key]['refused'] for key in ('traversalRefused', 'foreignToolRefused',
-                                                   'foreignRuntimeRefused', 'brokenCodeRefused'))
+                                                   'foreignRuntimeRefused', 'brokenCodeRefused',
+                                                   'missingNoticesRefused'))
         else 'Something did not behave as specified; read the report.')
     destination = paths.REPORTS / 'update-acceptance.json'
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -188,7 +211,9 @@ def main():
                        'installedVersionAfterRollback', 'dataSurvivedApply',
                        'dataSurvivedRollback', 'backupKept', 'traversalRefused',
                        'traversalFileNotWritten', 'foreignToolRefused', 'foreignRuntimeRefused',
-                       'brokenCodeRefused')}, indent=2, ensure_ascii=False))
+                       'brokenCodeRefused', 'missingNoticesRefused', 'noticesDeployed',
+                       'licenceReplaced', 'licenceRestored', 'noticesKeptAfterRollback')},
+                     indent=2, ensure_ascii=False))
     print('report:', destination)
     return 0 if report['verdict'].startswith('Staging') else 1
 

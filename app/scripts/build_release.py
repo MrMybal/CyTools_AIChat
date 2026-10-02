@@ -1,8 +1,10 @@
 """Build the application release archive: `app/` as the update stream expects it.
 
 The archive is what `update_download` stages and `update_apply` activates: a zip holding an
-`app/` directory with `CyTool.json` and `release.json` at its root. It is built from the
-sources rather than assembled by hand, so what ships is what the tests ran against.
+`app/` directory with `CyTool.json` and `release.json` at its root, and beside it the
+licence of the Tool (`LICENSE`) and the notices of the components it includes (`LICENCES/`).
+It is built from the sources rather than assembled by hand, so what ships is what the tests
+ran against, and a release that lost its notices on the way is refused by `--check`.
 
 Not everything in `app/` belongs to the product. The working files used while developing
 the Tool — the agent rules and the SDK guides addressed to an assistant — stay in the
@@ -10,6 +12,7 @@ repository and out of the archive, and so do caches, the SDK wheel and the neste
 caches. The exclusion is explicit here instead of relying on someone remembering it.
 
     runtime/python/Scripts/python.exe app/scripts/build_release.py [--out DIR] [--check]
+                                                                   [--report FILE]
 
 The archive lands in runtime/build by default. `--check` extracts it again with the same
 guard the updater uses and runs the updater's verification on the result, so a release that
@@ -41,6 +44,12 @@ EXCLUDED_FILES = {
 }
 EXCLUDED_DIRECTORIES = {'__pycache__', '.pytest_cache'}
 EXCLUDED_SUFFIXES = {'.pyc', '.pyo', '.whl', '.log', '.tmp', '.bak'}
+# Shipped at the archive root, beside app/, where the updater deploys them.
+ROOT_ITEMS = ('LICENSE', 'LICENCES')
+# What every release must hold. The notices are checked in the archive itself: their
+# presence in the repository proves nothing about the package a user receives.
+REQUIRED = ('app/CyTool.json', 'app/release.json', 'app/LICENSE-CyToolsCore.txt', 'LICENSE',
+            'LICENCES/SOURCES.txt', 'LICENCES/CyToolsCore-MIT.txt')
 
 
 def included(path):
@@ -50,6 +59,17 @@ def included(path):
     if any(part in EXCLUDED_DIRECTORIES for part in path.relative_to(APP).parts):
         return False
     return path.suffix.lower() not in EXCLUDED_SUFFIXES
+
+
+def root_files():
+    found = []
+    for name in ROOT_ITEMS:
+        item = ROOT / name
+        if item.is_file():
+            found.append(item)
+        elif item.is_dir():
+            found.extend(sorted(path for path in item.rglob('*') if path.is_file()))
+    return found
 
 
 def build(destination):
@@ -70,6 +90,13 @@ def build(destination):
             info.external_attr = 0o644 << 16
             bundle.writestr(info, path.read_bytes())
             names.append(arcname)
+        for path in root_files():
+            arcname = path.relative_to(ROOT).as_posix()
+            info = zipfile.ZipInfo(arcname, date_time=(2020, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            bundle.writestr(info, path.read_bytes())
+            names.append(arcname)
     digest = hashlib.sha256(destination.read_bytes()).hexdigest()
     return {'archive': str(destination), 'version': manifest['version'],
             'runtimeAbi': release.get('runtimeAbi', ''), 'files': len(names),
@@ -85,15 +112,18 @@ def check(destination):
         safe_extract(destination, target, budget=maintenance.MAX_ASSET_BYTES * 4)
         # Listed before verification: the compile pass inside verify_application_tree writes
         # __pycache__ into the staging tree, which is not part of what the archive holds.
-        present = sorted(p.relative_to(target / 'app').as_posix()
-                         for p in (target / 'app').rglob('*') if p.is_file())
+        everything = sorted(p.relative_to(target).as_posix()
+                            for p in target.rglob('*') if p.is_file())
         report = maintenance.verify_application_tree(target)
+    present = [name[len('app/'):] for name in everything if name.startswith('app/')]
     leaked = [name for name in present
               if name in EXCLUDED_FILES or Path(name).suffix.lower() in EXCLUDED_SUFFIXES
               or any(part in EXCLUDED_DIRECTORIES for part in Path(name).parts)]
     return {'verified': True, 'toolId': report['toolId'], 'version': report['version'],
             'runtimeAbi': report['runtimeAbi'], 'operations': report['operations'],
-            'filesExtracted': len(present), 'excludedFilesPresent': leaked}
+            'filesExtracted': len(everything), 'excludedFilesPresent': leaked,
+            'requiredFilesMissing': [name for name in REQUIRED if name not in everything],
+            'rootEntries': [name for name in everything if not name.startswith('app/')]}
 
 
 def main():
@@ -101,6 +131,8 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--out', default=str(ROOT / 'runtime/build'))
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--report', default=str(ROOT / 'data/reports/release-build.json'),
+                        help='Where the build record is written.')
     arguments = parser.parse_args()
     manifest = json.loads((APP / 'CyTool.json').read_text('utf-8-sig'))
     destination = Path(arguments.out) / ('%s-%s-app.zip' % (manifest['name'], manifest['version']))
@@ -112,14 +144,20 @@ def main():
         print('verified by the updater: tool %s version %s, runtime %s, %d operations, %d files'
               % (verdict['toolId'], verdict['version'], verdict['runtimeAbi'],
                  verdict['operations'], verdict['filesExtracted']))
+        print('beside app/: %s' % ', '.join(verdict['rootEntries']))
         if verdict['excludedFilesPresent']:
             print('EXCLUDED FILES FOUND IN THE ARCHIVE:', verdict['excludedFilesPresent'])
             return 1
+        if verdict['requiredFilesMissing']:
+            print('REQUIRED FILES MISSING FROM THE ARCHIVE:', verdict['requiredFilesMissing'])
+            return 1
         result['check'] = verdict
-    report = ROOT / 'data/reports/release-build.json'
-    report.parent.mkdir(parents=True, exist_ok=True)
-    report.write_text(json.dumps({**result, 'date': time.strftime('%Y-%m-%dT%H:%M:%S')},
-                                 indent=2, ensure_ascii=False), encoding='utf-8')
+    if arguments.report:
+        report = Path(arguments.report)
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text(json.dumps({**result, 'date': time.strftime('%Y-%m-%dT%H:%M:%S')},
+                                     indent=2, ensure_ascii=False), encoding='utf-8',
+                          newline='\n')
     return 0
 
 

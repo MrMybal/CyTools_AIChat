@@ -106,7 +106,17 @@ par capacité, est dans `app/Docs/CapabilityCoverage.md`.
 
 ## Licence
 
-Logiciel libre sous licence **GNU GPL v3.0 uniquement** (`LICENSE`), comme le SDK
-CyToolsCore sur lequel il repose. Les moteurs, la bibliothèque de connecteurs embarquée et
-les poids des modèles gardent leurs propres licences : `app/licenses.json`, le catalogue et
-l'onglet Options.
+Le code propre de l'outil est un logiciel libre sous licence **GNU GPL v3.0 uniquement**
+(`LICENSE`). Le SDK CyToolsCore sur lequel il repose est sous licence **MIT** : son texte
+complet et les liens vers les sources des composants inclus sont dans le dossier
+`LICENCES/`, livré avec l'outil (textes en anglais). Les moteurs et les poids des modèles,
+téléchargés à votre demande, gardent leurs propres licences : `app/licenses.json`, le
+catalogue et l'onglet Options.
+
+## Mettre à jour, revenir en arrière
+
+Depuis les sources : récupérez la nouvelle version, puis lancez
+`runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt` — c'est cette
+commande qui met le SDK à niveau. Depuis l'onglet **Mises à jour** : l'archive est
+vérifiée avant d'être activée, et *Restaurer la version précédente* remet l'application et
+les fichiers de licence d'avant. Dans les deux sens, `data/` n'est jamais touché.

@@ -9,9 +9,11 @@ local model loaded for one of them is the one the others use.
 The user guide is `../LISEZ-MOI.md`. The capability matrix, with what was tested and what was
 not, is `Docs/CapabilityCoverage.md`.
 
-License: GPL-3.0-only (`../LICENSE`), like the CyToolsCore SDK it is built on. It covers the
-code and the window; the vendored connector library, the llama.cpp engine and the model
-weights keep their own licences (`licenses.json`, `llm-catalog.json`).
+License: the Tool's own code and window are GPL-3.0-only (`../LICENSE`). The CyToolsCore SDK
+it is built on is MIT: its full text is in `../LICENCES/CyToolsCore-MIT.txt` and
+`LICENSE-CyToolsCore.txt`, and `../LICENCES/SOURCES.txt` lists the source of every included
+component. The llama.cpp engine and the model weights are downloaded separately under their
+own licences (`licenses.json`, `llm-catalog.json`).
 
 ## Layout
 
@@ -20,6 +22,8 @@ CyTools_AIChat/
   CyTools_AIChat.exe      Windows launcher (built from app/launcher.cpp)
   CyTools_AIChat.sh       Linux launcher, never executed by this project
   LISEZ-MOI.md            short user guide
+  LICENSE                 licence of the Tool's own code (GPL-3.0-only)
+  LICENCES/               licence texts and source links of the included components
   app/                    code, manifest, tests, scripts, documentation
   data/                   conversations, presets, models, jobs, logs, exports, reports
   runtime/                private Python, llama.cpp engines, downloads, updates, backups
@@ -49,9 +53,10 @@ runtime\python\Scripts\python.exe app\build_manifest.py
 powershell -ExecutionPolicy Bypass -File app\build_launcher.ps1
 ```
 
-`requirements.txt` installs CyToolsCore 0.9.0 (GPL-3.0-only) from its public repository,
-https://github.com/MrMybal/CyToolsCore, pinned to commit `442f53740fc6`, the code this Tool was
-verified against. **git must be on the PATH**: pip clones that commit.
+`requirements.txt` installs CyToolsCore 0.10.1 (MIT) from its public repository,
+https://github.com/MrMybal/CyToolsCore, pinned to commit `a8d200f2d0ba`, the code this Tool was
+verified against. **git must be on the PATH**: pip clones that commit. The manifest declares
+`exclusiveGroups`, which the scheduler only enforces from CyToolsCore 0.10.0.
 
 The virtual environment is created at its final path and is never moved: its scripts hold
 absolute paths. Building the launcher needs the Visual Studio C++ build tools; the script
@@ -158,10 +163,28 @@ editing the tag alone is not enough.
 
 ## Publishing an application release
 
-The expected asset is a `.zip` holding an `app/` directory with `CyTool.json` at its root and
-a `release.json` declaring `runtimeAbi`. Bump `RUNTIME_ABI` in `aichat/maintenance.py`
-whenever a release stops being loadable by the runtime already installed. Configure the
-repository in the Updates tab: the Tool never guesses one.
+The expected asset is the `.zip` built by `scripts/build_release.py`: an `app/` directory with
+`CyTool.json` and a `release.json` declaring `runtimeAbi`, and beside it `LICENSE` and
+`LICENCES/`. The updater refuses an archive without its notices and deploys them with `app/`.
+Bump `RUNTIME_ABI` in `aichat/maintenance.py` whenever a release stops being loadable by the
+runtime already installed: it was bumped for 0.1.1, which needs CyToolsCore 0.10.1 in
+`runtime/python`. Configure the repository in the Updates tab: the Tool never guesses one.
+
+## Updating an installation and going back
+
+The update stream replaces `app/` and the licence files, never `runtime/python`. Moving to a
+release with another `runtimeAbi` therefore takes one more step, in this order:
+
+```powershell
+git pull                                                             # or unpack the new sources
+runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt
+runtime\python\Scripts\python.exe -m pytest app\tests -q
+```
+
+To go back, check out the previous commit and run the same `pip install`: the requirement
+file of that commit pins the SDK it was verified against. An update applied from the
+Updates tab is undone by *Roll back*, which restores the kept `app/`, `LICENSE` and
+`LICENCES/`. `data/` is untouched in both directions.
 
 A checksum published beside a release is not an independent signature. What the Tool verifies
 is the size, the digest when the release carries one, the containment of the archive, the

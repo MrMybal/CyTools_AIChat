@@ -56,8 +56,15 @@ def state_file():
 ENGINE_REPOSITORY = 'ggml-org/llama.cpp'
 MAX_ASSET_BYTES = 768 * 1024 ** 2
 # Bumped whenever the application stops being loadable by the runtime already installed here.
-RUNTIME_ABI = 'python311-cytools09-imgui192-aichat01'
+RUNTIME_ABI = 'python311-cytools010-imgui192-aichat02'
 USER_AGENT = 'CyTools-AIChat'
+# Files beside app/ that belong to the delivered product and travel with a release: the
+# licence of the Tool and the notices of the components it includes. They are deployed and
+# restored together with app/. Nothing else at the root is touched, data/ least of all.
+ROOT_ITEMS = ('LICENSE', 'LICENCES')
+# A release without these is refused: a notice present only in the development
+# repository does not reach the person who installs the product.
+REQUIRED_NOTICES = ('SOURCES.txt', 'CyToolsCore-MIT.txt')
 
 
 def repository(value):
@@ -208,6 +215,12 @@ def verify_application_tree(root):
                           'matching full package instead.' % (abi, RUNTIME_ABI))
     if not (app_root / 'tool.py').is_file() or not (app_root / 'desktop.py').is_file():
         raise CyToolError('InvalidArchive', 'The staged application is missing its entry points.')
+    notices = app_root.parent / 'LICENCES'
+    missing = [name for name in REQUIRED_NOTICES if not (notices / name).is_file()]
+    if missing:
+        raise CyToolError('InvalidArchive',
+                          'The release does not carry its licence notices: LICENCES/%s.'
+                          % ', LICENCES/'.join(missing))
     compiled = subprocess.run([sys.executable, '-m', 'compileall', '-q', str(app_root)],
                               capture_output=True, text=True, encoding='utf-8', errors='replace',
                               timeout=300, creationflags=0x08000000 if os.name == 'nt' else 0)
@@ -215,7 +228,8 @@ def verify_application_tree(root):
         raise CyToolError('InvalidArchive',
                           'The staged application does not compile:\n' + (compiled.stdout or '')[-1500:])
     return {'path': str(app_root), 'version': document['version'], 'toolId': document['id'],
-            'runtimeAbi': abi or 'not declared', 'operations': len(document['operations'])}
+            'runtimeAbi': abi or 'not declared', 'operations': len(document['operations']),
+            'notices': sorted(item.name for item in notices.iterdir() if item.is_file())}
 
 
 def download_application(context, version=''):
@@ -280,6 +294,56 @@ def download_engine(context, version=''):
 
 # ------------------------------------------------------------------ activation
 
+def _replace_item(source, destination):
+    """Put a file or a directory in place of the current one, through a sibling copy."""
+    incoming = destination.with_name('%s.incoming-%d' % (destination.name, time.time_ns()))
+    if source.is_dir():
+        shutil.copytree(source, incoming)
+        if destination.exists():
+            shutil.rmtree(destination)
+    else:
+        shutil.copy2(source, incoming)
+    os.replace(incoming, destination)
+
+
+def deploy_root_items(staging_root, backup):
+    """Deploy the licence files that ship beside app/, keeping what they replace."""
+    kept = backup.with_name(backup.name + '.root')
+    kept.mkdir(parents=True, exist_ok=True)
+    for name in ROOT_ITEMS:
+        current = paths.ROOT / name
+        if current.is_dir():
+            shutil.copytree(current, kept / name)
+        elif current.is_file():
+            shutil.copy2(current, kept / name)
+    for name in ROOT_ITEMS:
+        incoming = Path(staging_root) / name
+        if incoming.exists():
+            _replace_item(incoming, paths.ROOT / name)
+    return kept
+
+
+def restore_root_items(state):
+    """Put back the licence files kept by the last update.
+
+    Only what was kept is restored. A notice folder that did not exist before the update
+    stays in place: the runtime may still hold the component it documents, and removing
+    a licence text is never the safe direction.
+    """
+    kept = state.get('rootBackup', '')
+    if not kept:
+        return []
+    source = Path(kept).resolve()
+    if not source.is_dir() or not source.is_relative_to(backups_dir().resolve()):
+        return []
+    restored = []
+    for name in ROOT_ITEMS:
+        if (source / name).exists():
+            _replace_item(source / name, paths.ROOT / name)
+            restored.append(name)
+    return restored
+
+
 def busy(runtime):
     return [job for job in runtime._jobs.values()
             if job['state'] in ('Queued', 'Running')] if runtime is not None else []
@@ -304,7 +368,8 @@ def apply(context, runtime, stream='application'):
     context.progress(20, currentStep='Re-verifying the staged application')
     report = verify_application_tree(source.parent)
     backups_dir().mkdir(parents=True, exist_ok=True)
-    backup = backups_dir() / ('app-%s-%d' % (current_version(), time.time_ns()))
+    previous_version = current_version()
+    backup = backups_dir() / ('app-%s-%d' % (previous_version, time.time_ns()))
     context.progress(50, currentStep='Keeping the current version')
     # A copy, not a move: if anything fails below, the running application is still in place.
     shutil.copytree(paths.APP, backup, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
@@ -324,9 +389,12 @@ def apply(context, runtime, stream='application'):
                           'The application folder is in use and could not be replaced (%s). Close '
                           'the window and apply the update at the next start.' % exc)
     shutil.rmtree(previous, ignore_errors=True)
+    context.progress(85, currentStep='Deploying the licence notices')
+    root_backup = deploy_root_items(source.parent, backup)
     write_json(state_file(),
                {'stream': 'application', 'version': report['version'], 'backup': str(backup),
-                'applied': time.strftime('%Y-%m-%dT%H:%M:%S'), 'previousVersion': current_version()})
+                'rootBackup': str(root_backup),
+                'applied': time.strftime('%Y-%m-%dT%H:%M:%S'), 'previousVersion': previous_version})
     context.progress(100, currentStep='Applied; restart to run the new version')
     return {'applied': True, 'stream': 'application', 'version': report['version'],
             'backup': str(backup), 'restartRequired': True}
@@ -360,6 +428,7 @@ def rollback(context, runtime, stream='application'):
         shutil.rmtree(incoming, ignore_errors=True)
         raise CyToolError('Busy', 'The application folder is in use (%s).' % exc)
     shutil.rmtree(previous, ignore_errors=True)
+    restore_root_items(state)
     restored = read_json(paths.APP / 'CyTool.json', {}).get('version', '')
     write_json(state_file(),
                {**state, 'rolledBackAt': time.strftime('%Y-%m-%dT%H:%M:%S'),
@@ -372,6 +441,7 @@ def state():
     return {'settings': settings(), 'current': current_version(),
             'staged': read_json(staging_path('application') / 'staged.json', {}),
             'lastApplied': read_json(state_file(), {}),
-            'backups': sorted(item.name for item in backups_dir().glob('app-*'))
+            'backups': sorted(item.name for item in backups_dir().glob('app-*')
+                              if not item.name.endswith('.root'))
                        if backups_dir().is_dir() else [],
             'dataUntouched': str(paths.DATA)}
