@@ -134,6 +134,8 @@ def check_configuration_round_trip(runtime, session_ui, capture, restore):
 
 
 def main():
+    from branding import configure as configure_branding
+    configure_branding('Cyberalien.CyTools_AIChat')
     runner = hello_imgui.RunnerParams()
     runner.app_window_params.window_title = WINDOW_TITLE
     runner.app_window_params.window_geometry.size = (1320, 880)

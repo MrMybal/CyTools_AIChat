@@ -189,3 +189,8 @@ Updates tab is undone by *Roll back*, which restores the kept `app/`, `LICENSE` 
 A checksum published beside a release is not an independent signature. What the Tool verifies
 is the size, the digest when the release carries one, the containment of the archive, the
 Tool identity, the runtime ABI and that the staged code compiles — never by importing it.
+
+
+## Application icon
+
+The logo source is assets/branding/logo.png. build_icon.ps1 derives the 16-256 px Windows ICO and assets/app_settings/icon.png for Hello ImGui. build_launcher.ps1 embeds the ICO in the launcher. branding.py selects assets independently of the working directory and assigns this Tool its own Windows taskbar identity.

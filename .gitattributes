@@ -7,3 +7,4 @@
 *.dll       binary
 *.whl       binary
 *.gguf      binary
+*.ico binary

@@ -1,5 +1,9 @@
 # CyTools_AIChat
 
+<p align="center">
+  <img src="app/assets/branding/logo.png" alt="CyTools AIChat logo" width="160">
+</p>
+
 A chat engine for Windows: a desktop application, a command line and an MCP server on one
 runtime, built on the [CyToolsCore](https://github.com/MrMybal/CyToolsCore) SDK. Several
 conversations stay open in tabs and are kept on disk, with the models you already have access

@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 # shell that has `cl` is not the shell this script is usually run from.
 $appRoot = $PSScriptRoot
 $toolRoot = Split-Path -Parent $appRoot
+& (Join-Path $appRoot 'build_icon.ps1')
 $build = Join-Path $toolRoot 'runtime/build'
 New-Item -ItemType Directory -Force -Path $build | Out-Null
 
@@ -28,15 +29,18 @@ $source = Join-Path $appRoot 'launcher.cpp'
 if (Get-Command cl -ErrorAction SilentlyContinue) {
     Push-Location $build
     try {
-        & cl /nologo /std:c++17 /MT /EHsc /O2 $source "/Fe:$output" /link /SUBSYSTEM:WINDOWS user32.lib
+        & rc.exe /nologo /I $appRoot /fo launcher.res (Join-Path $appRoot 'launcher.rc')
+        if ($LASTEXITCODE -ne 0) { throw 'Icon resource compilation failed' }
+        & cl /nologo /std:c++17 /MT /EHsc /O2 $source "/Fe:$output" /link /SUBSYSTEM:WINDOWS user32.lib launcher.res
         if ($LASTEXITCODE -ne 0) { throw 'Launcher compilation failed' }
     } finally { Pop-Location }
 } else {
     $vcvars = Get-VcVars
     $quote = [char]34
     $line = 'call ' + $quote + $vcvars + $quote + ' >nul && cd /d ' + $quote + $build + $quote +
+            ' && rc /nologo /I ' + $quote + $appRoot + $quote + ' /fo launcher.res ' + $quote + (Join-Path $appRoot 'launcher.rc') + $quote +
             ' && cl /nologo /std:c++17 /MT /EHsc /O2 ' + $quote + $source + $quote +
-            ' /Fe:' + $quote + $output + $quote + ' /link /SUBSYSTEM:WINDOWS user32.lib'
+            ' /Fe:' + $quote + $output + $quote + ' /link /SUBSYSTEM:WINDOWS user32.lib launcher.res'
     & cmd.exe /c $line
     if ($LASTEXITCODE -ne 0) { throw 'Launcher compilation failed' }
 }
