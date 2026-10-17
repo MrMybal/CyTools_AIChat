@@ -57,6 +57,22 @@ qu'un modèle résident, dans le processus du runtime.
   inchangée de la licence du SDK installé, `LICENCES/SOURCES.txt` liste les sources ;
   l'archive de release les embarque avec `LICENSE`, l'updater refuse une archive qui ne les
   contient pas et les déploie à côté de `app/`. Textes de licence en anglais.
+- **La voix tourne dans deux environnements séparés.** `runtime/engines/stt` (transformers 5,
+  processeur) et `runtime/engines/tts` (transformers 4.57, CUDA) : XTTS-v2 ne fonctionne pas
+  avec transformers 5 et Parakeet/Phonon en a besoin. Ne pas les fusionner. f5-tts s'installe
+  sans ses dépendances déclarées (gradio) ; ce que son inférence importe est listé dans
+  `requirements-speech-tts.txt`.
+- **Le processus vocal ne reçoit aucun secret** (ni jeton CyTools, ni clé de fournisseur) et
+  tourne hors ligne sur des poids déjà vérifiés par le catalogue.
+- **La dictée n'envoie jamais rien d'elle-même** : les mots vont dans la zone de saisie.
+  `speak` sur un message stocké lit le texte de la conversation, jamais un texte fourni par
+  l'appelant à sa place.
+- **Un texte lu passe par `aichat/speech_text.py`** : le Markdown est réduit aux mots (blocs de
+  code, liens, accents graves et emphase retirés) puis découpé sous la limite de longueur
+  d'XTTS par langue. Ne pas réactiver `enable_text_splitting` : il exige spaCy avec ses
+  modules japonais et chinois.
+- **Licences non commerciales** (XTTS-v2, F5-TTS) : installées seulement après l'acceptation
+  de l'utilisateur, comme les autres modèles.
 
 ## Interface
 
@@ -66,8 +82,21 @@ Anglais par défaut, français sélectionnable. Écrire le texte anglais dans `t
 entrée. Ne jamais traduire un identifiant, un chemin, un nom de modèle, une invite ou le
 texte saisi par l'utilisateur.
 
-La police embarquée ne couvre pas le bloc des formes géométriques : rester en ASCII pour les
-marqueurs d'état, sinon ils s'affichent en carrés vides.
+L'apparence vient de CyUI : `app/cyui.py` est une copie inchangée de
+`CyImgui_Interface/python/cyui.py` (MIT) ; ne pas la modifier ici, la remplacer par la
+nouvelle version de la bibliothèque. Ses règles s'appliquent :
+
+- couleurs uniquement par rôles de `cyui.palette()` (`text`, `textDim`, `accent`,
+  `success`...), jamais de couleur écrite en dur ; tailles en `cyui.dp()` ;
+- un seul bouton principal par vue, les actions secondaires en boutons icônes avec infobulle
+  (`cyui.icon.*`), les actions destructives en `danger` et confirmées dans une modale ;
+- les réglages en `cyui.property(...)`, les blocs en `card(...)` de `gui/widgets.py`, une
+  liste vide en `cyui.empty_state(...)`, un retour en `cyui.notify(...)` ;
+- vérifier les cinq thèmes (dont `light-grey`) et les deux densités dans Options.
+
+Segoe UI couvre les accents : le français s'écrit avec ses accents. Les libellés de badge
+passent par `tr('...').upper()` (la recherche de traduction ignore la casse). Les fonctions
+de `ui_common.imgui` traduisent déjà leur libellé : leur passer le texte anglais.
 
 Après toute modification d'un paramètre ou d'un fournisseur : régénérer le manifeste avec
 `app/build_manifest.py`.

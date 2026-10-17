@@ -1,4 +1,4 @@
-"""The catalogue of downloadable local weights: chat models and LoRA adapters.
+"""The catalogue of downloadable local weights: chat models, LoRA adapters and speech models.
 
 A catalogue entry pins a repository, a revision, a file size and a SHA-256. Downloading
 resumes where it stopped, verifies the digest, and only then writes an installation receipt
@@ -9,8 +9,13 @@ Weights live in `data/models/`, which no update ever replaces, and the receipt h
 absolute path so the whole tree can be moved with the Tool. Licence acceptance is recorded
 per entry: the user accepts the terms on the provider's page, the Tool records that they
 said so, and it never accepts on their behalf.
+
+Speech models (`app/speech-catalog.json`, kinds `stt` and `tts`) go through the same download,
+digest and receipt path. A file of a speech entry may come from another repository or revision
+than its entry, and may sit at another path in that repository than its local name.
 """
 import hashlib
+import shutil
 from pathlib import Path
 
 from cytools_core import CyToolError
@@ -28,6 +33,13 @@ def catalog_file():
     return paths.APP / 'llm-catalog.json'
 
 
+def speech_catalog_file():
+    return paths.APP / 'speech-catalog.json'
+
+
+SPEECH_KINDS = ('stt', 'tts')
+
+
 def catalogue():
     data = read_json(catalog_file(), {})
     if not isinstance(data, dict) or not data.get('models'):
@@ -37,8 +49,11 @@ def catalogue():
 
 def kinds():
     data = catalogue()
+    speech = read_json(speech_catalog_file(), {})
     return {**{k: dict(v, kind='model') for k, v in data.get('models', {}).items()},
-            **{k: dict(v, kind='lora') for k, v in data.get('loras', {}).items()}}
+            **{k: dict(v, kind='lora') for k, v in data.get('loras', {}).items()},
+            **{k: dict(v, kind='stt') for k, v in speech.get('stt', {}).items()},
+            **{k: dict(v, kind='tts') for k, v in speech.get('tts', {}).items()}}
 
 
 def entry(identifier):
@@ -50,11 +65,16 @@ def entry(identifier):
 
 def directory(identifier):
     info = entry(identifier)
+    if info['kind'] in SPEECH_KINDS:
+        return paths.SPEECH_MODELS / identifier
     return (paths.LORA_MODELS if info['kind'] == 'lora' else paths.LLM_MODELS) / identifier
 
 
 def file_path(identifier):
+    """The file a chat model or an adapter is loaded from; the folder, for a speech model."""
     info = entry(identifier)
+    if info['kind'] in SPEECH_KINDS:
+        return directory(identifier)
     return directory(identifier) / info['files'][0]['name']
 
 
@@ -117,7 +137,11 @@ def status(identifier, verify=False, cancellation=None):
             'contextTokens': info.get('contextTokens', 0),
             'ramGiB': info.get('ramGiB', 8), 'vramGiB': info.get('vramGiB', 6),
             'notes': info.get('notes', ''),
-            'path': str(file_path(identifier)) if installed(identifier) else ''}
+            'path': str(file_path(identifier)) if installed(identifier) else '',
+            **({'languages': info.get('languages', []),
+                'family': info.get('family', info.get('format', '')),
+                'component': bool(info.get('component'))}
+               if info['kind'] in SPEECH_KINDS else {})}
 
 
 def listing(kind='', verify=False):
@@ -125,8 +149,10 @@ def listing(kind='', verify=False):
             if not kind or info['kind'] == kind]
 
 
-def url_for(info, filename):
-    return 'https://huggingface.co/%s/resolve/%s/%s' % (info['repo'], info['revision'], filename)
+def url_for(info, item):
+    return 'https://huggingface.co/%s/resolve/%s/%s' % (
+        item.get('repo', info['repo']), item.get('revision', info['revision']),
+        item.get('path', item['name']))
 
 
 def install(context, identifier, accept_license=False, token=''):
@@ -146,8 +172,9 @@ def install(context, identifier, accept_license=False, token=''):
     for item in info['files']:
         context.cancellation.check()
         DownloadManager(directory(identifier)).download(
-            item['name'], url_for(info, item['name']),
-            sha256=item['sha256'], size=item['size'], revision=info['revision'],
+            item['name'], url_for(info, item),
+            sha256=item['sha256'], size=item['size'],
+            revision=item.get('revision', info['revision']),
             cancellation=context.cancellation, headers=headers,
             progress=lambda n, t, base=done: context.progress(
                 min(97, 100 * (base + n) / total),
@@ -161,7 +188,8 @@ def install(context, identifier, accept_license=False, token=''):
             raise CyToolError('IntegrityFailure',
                               'The downloaded file does not match its published digest.')
         write_json(receipt_path(path), {'sha256': actual, 'size': item['size'],
-                                        'revision': info['revision'], 'repository': info['repo'],
+                                        'revision': item.get('revision', info['revision']),
+                                        'repository': item.get('repo', info['repo']),
                                         'name': item['name']})
     write_json(paths.SETTINGS / ('license-%s.json' % identifier),
                {'accepted': True, 'license': info.get('license', ''), 'revision': info['revision']})
@@ -195,6 +223,11 @@ def uninstall(identifier):
             path.unlink()
             receipt_path(path).unlink(missing_ok=True)
             removed.append(item['name'])
+    # What the speech engine unpacked from an archive goes with the archive.
+    unpacked = directory(identifier) / info['unpack'] if info.get('unpack') else None
+    if unpacked is not None and unpacked.is_dir():
+        shutil.rmtree(unpacked)
+        removed.append(info['unpack'] + '/')
     return {'id': identifier, 'removedFiles': removed, 'installed': False}
 
 

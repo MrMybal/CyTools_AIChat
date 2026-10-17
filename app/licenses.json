@@ -7,6 +7,13 @@
     "notes": "Copyright (c) 2026 Cyberalien. Runtime, transports and the scaffolded interface files in app/. Full text in LICENCES/CyToolsCore-MIT.txt and app/LICENSE-CyToolsCore.txt; installed from the public repository at the commit pinned in app/requirements.txt."
   },
   {
+    "kind": "Component",
+    "name": "CyUI (Python port, vendored as app/cyui.py)",
+    "license": "MIT",
+    "url": "",
+    "notes": "Copyright (c) 2026 Cyberalien. Themes, fonts and widgets of the window; an unchanged copy of python/cyui.py from the author's CyImgui_Interface project (not published). Full text in LICENCES/CyUI-MIT.txt. The Windows fonts it uses are read from the system and not shipped."
+  },
+  {
     "kind": "Engine",
     "name": "llama.cpp (b11114, Windows x64 CPU and CUDA 12.4 builds)",
     "license": "MIT",
@@ -61,5 +68,54 @@
     "license": "Not declared",
     "url": "https://huggingface.co/ggml-org/LoRA-Qwen2.5-1.5B-Instruct-abliterated-F16-GGUF",
     "notes": "The repository declares no licence, so its terms are unknown. It is included because it is a published GGUF adapter that makes a real LoRA test possible."
+  },
+  {
+    "kind": "Component",
+    "name": "fermion_container.py (vendored, Phonon-2 reader)",
+    "license": "Apache-2.0",
+    "url": "https://huggingface.co/FermionResearch/Phonon-2",
+    "notes": "Copyright 2026 Fermion Research. Unchanged copy in app/aichat/vendor; full licence text in LICENCES/Apache-2.0.txt."
+  },
+  {
+    "kind": "Engine",
+    "name": "Speech environments (PyTorch, transformers, coqui-tts, f5-tts)",
+    "license": "BSD-3-Clause, Apache-2.0, MPL-2.0, MIT",
+    "url": "https://pytorch.org",
+    "notes": "Installed on request into runtime/engines/stt and runtime/engines/tts; not distributed with the Tool. The CUDA build of PyTorch brings NVIDIA libraries under the CUDA Toolkit EULA."
+  },
+  {
+    "kind": "Model",
+    "name": "Phonon-2 (speech to text)",
+    "license": "CC-BY-4.0 (weights), Apache-2.0 (code)",
+    "url": "https://huggingface.co/FermionResearch/Phonon-2",
+    "notes": "Derived from NVIDIA Parakeet TDT 0.6B v3 (CC-BY-4.0) by Fermion Research."
+  },
+  {
+    "kind": "Model",
+    "name": "Parakeet TDT 0.6B v3 (speech to text)",
+    "license": "CC-BY-4.0",
+    "url": "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
+    "notes": "NVIDIA Corporation."
+  },
+  {
+    "kind": "Model",
+    "name": "XTTS-v2 (text to speech)",
+    "license": "Coqui Public Model License 1.0.0",
+    "url": "https://coqui.ai/cpml.txt",
+    "notes": "Non-commercial use only, of the model and of its output."
+  },
+  {
+    "kind": "Model",
+    "name": "F5-TTS v1 Base and F5-TTS French (text to speech)",
+    "license": "CC-BY-NC-4.0",
+    "url": "https://huggingface.co/SWivid/F5-TTS",
+    "notes": "Non-commercial use only. The French model is by RASPIAUDIO: https://huggingface.co/RASPIAUDIO/F5-French-MixedSpeakers-reduced"
+  },
+  {
+    "kind": "Model",
+    "name": "Vocos mel 24 kHz (vocoder for F5-TTS)",
+    "license": "MIT",
+    "url": "https://huggingface.co/charactr/vocos-mel-24khz",
+    "notes": ""
   }
 ]

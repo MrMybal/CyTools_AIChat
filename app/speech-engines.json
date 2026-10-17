@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "notes": "Two private Python environments, created on request under runtime/engines. They are separate because the speech-to-text models need transformers 5 (ParakeetForTDT) while XTTS-v2 relies on transformers 4 internals that version 5 removed. Speech to text runs on the CPU: a 20 second recording is transcribed in about 1.4 s here, and the GPU stays free for the chat model and the voices.",
+  "engines": {
+    "stt": {
+      "label": "Speech to text (PyTorch CPU, transformers 5)",
+      "directory": "runtime/engines/stt",
+      "torch": {
+        "packages": ["torch==2.8.0"],
+        "index": "https://download.pytorch.org/whl/cpu"
+      },
+      "requirements": "requirements-speech-stt.txt",
+      "verify": ["torch", "transformers", "librosa", "soundfile", "zstandard"],
+      "check": "from transformers import ParakeetForTDT, AutoProcessor",
+      "families": ["phonon", "parakeet"],
+      "estimatedBytes": 1600000000
+    },
+    "tts": {
+      "label": "Text to speech (PyTorch CUDA 12.8, XTTS-v2, F5-TTS)",
+      "directory": "runtime/engines/tts",
+      "torch": {
+        "packages": ["torch==2.8.0+cu128", "torchaudio==2.8.0+cu128"],
+        "index": "https://download.pytorch.org/whl/cu128",
+        "cpu": {
+          "packages": ["torch==2.8.0", "torchaudio==2.8.0"],
+          "index": "https://download.pytorch.org/whl/cpu"
+        }
+      },
+      "requirements": "requirements-speech-tts.txt",
+      "withoutDependencies": ["f5-tts==1.1.22"],
+      "verify": ["torch", "torchaudio", "transformers", "TTS", "f5_tts", "soundfile", "librosa"],
+      "check": "from TTS.tts.models.xtts import Xtts; from f5_tts.api import F5TTS",
+      "families": ["xtts", "f5"],
+      "estimatedBytes": 7500000000
+    }
+  }
+}

@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 APP = Path(__file__).resolve().parent
-VERSION = '0.1.1'
+VERSION = '0.2.0'
 
 PROVIDERS = [
     ('codex', 'Codex (agent CLI, your ChatGPT sign-in)'),
@@ -67,7 +67,16 @@ EXCLUSIVE_GROUPS = {
     'model-files': ('model_install', 'model_repair', 'model_uninstall'),
     'engine-files': ('engine_install', 'engine_remove'),
     'application-update': ('update_download', 'update_apply', 'update_rollback'),
+    # A speech environment must not be replaced while its worker serves a request. Dictation
+    # and reading use separate workers, so they stay in separate groups and can overlap.
+    'stt-engine': ('speech_engine_install', 'speech_engine_remove', 'transcribe',
+                   'transcribe_live', 'voice_add'),
+    'tts-engine': ('speech_engine_install', 'speech_engine_remove', 'speak'),
 }
+
+SPEECH_FILE = ('Audio file: an absolute path anywhere on this machine, or a name inside '
+               'data/inputs. WAV, FLAC, OGG or MP3. It is copied for the job and the original is '
+               'left untouched.')
 
 
 def operation(identifier, name, description, properties, required, outputs,
@@ -246,8 +255,9 @@ def operations():
 
     items.append(operation(
         'model_list', 'List local weights',
-        'Catalogue of downloadable GGUF models and LoRA adapters with their installation state.',
-        {'kind': {'type': 'string', 'enum': ['', 'model', 'lora'], 'default': ''},
+        'Catalogue of downloadable GGUF models, LoRA adapters and speech models with their installation state.',
+        {'kind': {'type': 'string', 'enum': ['', 'model', 'lora', 'stt', 'tts'], 'default': '',
+                  'description': 'model and lora are chat weights; stt and tts are speech models.'},
          'verify': {'type': 'boolean', 'default': False,
                     'description': 'Re-hash installed files. Slow on large weights.'}},
         [], {'models': {'type': 'array', 'items': {'type': 'object'},
@@ -271,7 +281,12 @@ def operations():
          'architecture': string('Declared architecture.'),
          'contextTokens': {'type': 'integer'}, 'ramGiB': {'type': 'integer'},
          'vramGiB': {'type': 'integer'}, 'notes': string('Notes.'),
-         'path': string('Installed file path.')},
+         'path': string('Installed file path; the folder, for a speech model.'),
+         'languages': {'type': 'array', 'items': {'type': 'string'}, '_optional': True,
+                       'description': 'Languages of a speech model.'},
+         'family': string('Engine family of a speech model.', _optional=True),
+         'component': {'type': 'boolean', '_optional': True,
+                       'description': 'Installed for another model, not chosen directly.'}},
         progress=True, permissions=['network']))
 
     items.append(operation(
@@ -316,6 +331,8 @@ def operations():
         'engine_remove', 'Remove a llama.cpp engine', 'Delete a build this Tool installed.',
         {'build': {'type': 'string', 'enum': ['cpu', 'cuda']}}, ['build'],
         {'id': string('Build id.'), 'removed': {'type': 'boolean'}}, cancel=False))
+
+    items.extend(speech_operations())
 
     items.append(operation(
         'resident_status', 'Local model status',
@@ -415,6 +432,150 @@ def operations():
             if item['id'] in members:
                 item.setdefault('exclusiveGroups', []).append(group)
     return items
+
+
+def speech_operations():
+    voice_row = {'type': 'object', 'description': 'id, name, kind (recorded, sample, studio), '
+                                                  'language, transcript, clip, families.'}
+    return [
+        operation(
+            'speech_status', 'Speech status',
+            'The two speech environments, the speech models with their installation state, the '
+            'running speech workers and the speech settings.',
+            {}, [], {'engines': {'type': 'object', 'description': 'stt and tts environments.'},
+                     'models': {'type': 'array', 'items': {'type': 'object'},
+                                'description': 'Speech catalogue rows (kinds stt and tts).'},
+                     'workers': {'type': 'object', 'description': 'Running speech workers.'},
+                     'settings': {'type': 'object', 'description': 'Speech settings.'}},
+            cancel=False),
+        operation(
+            'speech_engine_install', 'Install a speech environment',
+            'Create or repair a private Python environment for speech under runtime/engines: stt '
+            '(PyTorch CPU and transformers 5, for Phonon-2 and Parakeet) or tts (PyTorch CUDA 12.8 '
+            'or CPU, XTTS-v2 and F5-TTS). Downloads several gigabytes from PyPI and the PyTorch '
+            'index. Speech models and voices in data/ are not touched.',
+            {'engine': {'type': 'string', 'enum': ['stt', 'tts']},
+             'device': {'type': 'string', 'enum': ['cuda', 'cpu'], 'default': 'cuda',
+                        'description': 'PyTorch build for the tts environment. stt always uses the CPU.'}},
+            ['engine'],
+            {'engine': string('Environment.'), 'label': string('Description.'),
+             'directory': string('Folder.'), 'installed': {'type': 'boolean'},
+             'families': {'type': 'array', 'items': {'type': 'string'}},
+             'estimatedBytes': {'type': 'integer'}, 'cuda': {'type': 'boolean'},
+             'cpuOnly': {'type': 'boolean'}, 'device': string('Device found.'),
+             'torch': string('PyTorch version.'), 'installedAt': string('Date.')},
+            progress=True, permissions=['network', 'processSpawn']),
+        operation(
+            'speech_engine_remove', 'Remove a speech environment',
+            'Delete runtime/engines/stt or runtime/engines/tts. Models and voices stay.',
+            {'engine': {'type': 'string', 'enum': ['stt', 'tts']}}, ['engine'],
+            {'engine': string('Environment.'), 'removed': {'type': 'boolean'}}, cancel=False),
+        operation(
+            'speech_settings', 'Speech settings',
+            'Read or change the speech preferences. A field left out keeps its value.',
+            {'stt_model': string('Speech-to-text model id. Empty picks the best installed one.'),
+             'tts_model': string('Voice model id. Empty picks an installed one that speaks the language.'),
+             'voice': string('Voice id (voice_list). Empty picks a default for the model.'),
+             'language': string('auto, or a code such as fr or en.'),
+             'speed': {'type': 'number', 'minimum': 0.5, 'maximum': 2.0},
+             'tts_device': {'type': 'string', 'enum': ['auto', 'cuda', 'cpu']},
+             'auto_read': {'type': 'boolean', 'description': 'Read new replies aloud in the window.'},
+             'live_dictation': {'type': 'boolean',
+                                'description': 'Show the words in the window while you speak.'}},
+            [], {'settings': {'type': 'object', 'description': 'The stored settings.'}},
+            cancel=False),
+        operation(
+            'transcribe', 'Transcribe speech',
+            'Speech to text with Phonon-2 (English) or Parakeet TDT 0.6B v3 (25 languages, French '
+            'included), on the CPU. The model stays loaded for the next request.',
+            {'audio': string(SPEECH_FILE, **{'x-cy-kind': 'File'}),
+             'model': string('Speech-to-text model id. Empty uses the settings, then the best '
+                             'installed model for the language.', default=''),
+             'language': string('Expected language, used only to choose the model: en prefers '
+                                'Phonon-2. The models detect the language themselves.', default='')},
+            ['audio'],
+            {'text': string('What was said.'), 'model': string('Model used.'),
+             'audioSeconds': {'type': 'number'}, 'seconds': {'type': 'number'},
+             'loadSeconds': {'type': 'number'}},
+            progress=True, permissions=['processSpawn']),
+        operation(
+            'transcribe_live', 'Transcribe while recording',
+            'Follow a recording the desktop window is writing (data/inputs/dictation/live-<id>.pcm, '
+            '16-bit mono PCM) and publish DictationPartial events with the text so far, about every '
+            'half second of new speech. Sentences are closed at pauses and their words become '
+            'final; the sentence being spoken may still change. The job ends when the window '
+            'creates <name>.done and returns the whole text. Meant for the window; give a file to '
+            'transcribe instead.',
+            {'stream': string('Name of the live recording in data/inputs/dictation.'),
+             'rate': {'type': 'integer', 'minimum': 8000, 'maximum': 192000,
+                      'description': 'Sample rate of the recording.'},
+             'model': string('Speech-to-text model id. Empty uses the settings.', default=''),
+             'language': string('Expected language, used only to choose the model.', default=''),
+             'max_seconds': {'type': 'number', 'minimum': 5, 'maximum': 3600, 'default': 600}},
+            ['stream', 'rate'],
+            {'text': string('Everything that was said.'), 'model': string('Model used.'),
+             'audioSeconds': {'type': 'number'}, 'passes': {'type': 'integer'},
+             'seconds': {'type': 'number'}, 'loadSeconds': {'type': 'number'}},
+            progress=True, permissions=['processSpawn']),
+        operation(
+            'speak', 'Read text aloud',
+            'Text to speech with XTTS-v2 or F5-TTS. Give a text, or a conversation and one of its '
+            'messages to read a stored reply. The audio of a stored reply is kept in data/speech '
+            'and reused when the same reply is read again with the same voice.',
+            {'text': string('Text to read. Ignored when conversation and message are given.',
+                            default='', **{'x-cy-kind': 'MultilineString'}),
+             'conversation': string('Conversation id, to read one of its messages.', default=''),
+             'message': string('Message id within that conversation.', default=''),
+             'model': string('Voice model id. Empty uses the settings.', default=''),
+             'voice': string('Voice id from voice_list. Empty uses the settings, then a default.',
+                             default=''),
+             'language': string('auto, or a code such as fr or en. Empty uses the settings.',
+                                default=''),
+             'speed': {'type': 'number', 'minimum': 0.5, 'maximum': 2.0,
+                       'description': 'Speaking rate. Empty uses the settings.'},
+             'device': {'type': 'string', 'enum': ['', 'auto', 'cuda', 'cpu'], 'default': ''},
+             'progressive': {'type': 'boolean', 'default': False,
+                             'description': 'Publish a SpeechPiece event with a WAV file for each '
+                                            'sentence as soon as it is made, so playback can start '
+                                            'before the whole text is ready. The pieces are written '
+                                            'to data/speech/pieces; whoever plays them deletes them. '
+                                            'Cancelling stops after the current sentence.'}},
+            [],
+            {'audio': string('WAV file (16-bit PCM).', **{'x-cy-kind': 'File'}),
+             'durationSeconds': {'type': 'number'}, 'model': string('Model used.'),
+             'voice': string('Voice id used.'), 'voiceName': string('Voice name.'),
+             'language': string('Language spoken.'),
+             'cached': {'type': 'boolean', 'description': 'Reused from an earlier reading.'},
+             'seconds': {'type': 'number'}, 'device': string('cuda or cpu.')},
+            progress=True, permissions=['processSpawn']),
+        operation(
+            'voice_list', 'List voices',
+            'Recorded and imported voices, the sample clips of installed models and the XTTS-v2 '
+            'studio voices.',
+            {}, [], {'voices': {'type': 'array', 'items': voice_row}}, permissions=['processSpawn']),
+        operation(
+            'voice_add', 'Add a voice',
+            'Keep a clip as a voice to imitate. Its words are found by speech to text unless you '
+            'give them: F5-TTS needs them, XTTS-v2 does not.',
+            {'audio': string(SPEECH_FILE, **{'x-cy-kind': 'File'}),
+             'name': string('Name shown in the voice list.', default=''),
+             'language': string('Language spoken in the clip, such as fr or en.', default=''),
+             'transcript': string('The exact words spoken in the clip.', default=''),
+             'transcribe': {'type': 'boolean', 'default': True,
+                            'description': 'Find the words by speech to text when none are given.'}},
+            ['audio'], {'voice': voice_row}, progress=True, permissions=['processSpawn']),
+        operation(
+            'voice_delete', 'Delete a voice',
+            'Move a recorded or imported voice to data/voices/deleted.',
+            {'voice': string('Voice id.')}, ['voice'],
+            {'voice': string('Voice id.'), 'deleted': {'type': 'boolean'},
+             'keptIn': string('Where the voice was moved.')}, cancel=False),
+        operation(
+            'speech_unload', 'Unload the speech models',
+            'Stop both speech workers and free the memory they hold.',
+            {}, [], {'stopped': {'type': 'object', 'description': 'Which workers were running.'}},
+            cancel=False),
+    ]
 
 
 def manifest():

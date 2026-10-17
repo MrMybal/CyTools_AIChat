@@ -1,4 +1,4 @@
-# Couverture des capacités — CyTools_AIChat 0.1.1
+# Couverture des capacités — CyTools_AIChat 0.2.0
 
 Ce document est la matrice exigée par `Docs/FullOperationAccess.md`. Il sépare trois états
 qui ne doivent jamais être confondus : **implémenté et testé** sur cette machine,
@@ -175,7 +175,36 @@ n'est démarré par un chargement et aucun secret n'entre dans le fichier
 | Découverte et téléchargement d'une vraie release GitHub | **Non validé** | Aucun dépôt de cette application n'est publié ; l'outil refuse d'en inventer un |
 | Mise à jour du moteur | **Partiel** | L'installation depuis les assets épinglés est testée ; passer à une nouvelle balise llama.cpp exige d'épingler ses empreintes dans `app/engine-assets.json` |
 
-## 7. Ce qui n'est pas dans cette version
+## 7. Voix : dictée et lecture (0.2.0, exécuté le 2026-10-06)
+
+Même machine, environnement `stt` (PyTorch 2.8.0 CPU, transformers 5.18.0) et environnement
+`tts` (PyTorch 2.8.0+cu128, transformers 4.57.3, coqui-tts 0.27.5, f5-tts 1.1.22), tous deux
+installés par l'opération `speech_engine_install` du Tool. Les extraits de test sont des voix
+de synthèse (voix Windows SAPI et répliques de personnages générées par CyTools_PersonaRP),
+dont le texte est connu.
+
+| Capacité | État | Preuve |
+|---|---|---|
+| Installation des environnements `stt` et `tts` par l'opération | **Testé** | Les deux terminent `Completed`, imports et contrôle (`ParakeetForTDT`, `Xtts`, `F5TTS`) vérifiés, CUDA détecté dans `tts` |
+| Installation des 5 modèles vocaux + vocodeur par `model_install` | **Testé** | Empreintes SHA-256 vérifiées, acceptation de licence enregistrée par modèle |
+| Dictée, Parakeet TDT 0.6B v3 (français) | **Testé** | `transcribe` : 0,86 s pour 8,5 s d'audio, 12 s de premier chargement ; 6,4 % d'erreur moyenne sur 7 extraits français (surtout chiffres écrits « 4 », « 20h » et noms propres) |
+| Dictée, Phonon-2 (anglais) | **Testé** | `transcribe` : 0 % d'erreur sur la phrase anglaise ; conteneur déballé et vérifié par empreinte au premier chargement (31 s) ; 21,8 % d'erreur sur les extraits français : il est fait pour l'anglais |
+| Dictée en direct (`transcribe_live`) | **Testé** | Réplique française de 22 s injectée au rythme de la parole dans la vraie fenêtre (`--smoke-dictate`) : mots écrits dans la zone de saisie 0,3 à 0,6 s après avoir été dits, texte final 0,5 s après l'arrêt, identique à la transcription d'un bloc ; ~6 s avant les premiers mots lors du premier démarrage de la session (chargement du modèle) |
+| Lecture XTTS-v2, voix de studio, français et anglais | **Testé** | `speak` sur GPU : ~2 s pour 4 s d'audio ; retranscrit par la dictée : 6,7 % (« ravi » au lieu de « ravie ») et 0 % |
+| Lecture d'une longue réponse en Markdown (658 caractères, accents graves, gras, lien, liste) | **Testé** | Correctif du 2026-10-06 : XTTS-v2 échouait (`enable_text_splitting` exige spaCy). Le texte est désormais nettoyé (`aichat/speech_text.py`) et découpé sous la limite d'XTTS ; XTTS-v2 : 44,5 s d'audio en 37 s (chargement compris), F5 français : 43,5 s en 20 s ; retranscription fidèle, sauf les noms de fichiers (« speech_worker.py » lu « Speech Worker P ») |
+| Lecture progressive (`speak` avec `progressive`) | **Testé** | Même réponse longue (~50 s de parole) : première phrase jouable après 1,4 s avec XTTS-v2 chargé, texte entier prêt en 14 s, aucun blanc entre les phrases ; F5 français : 9,5 s (changement de modèle compris), aucun blanc ; aucun fichier de phrase laissé. Arrêt : le processus vocal s'arrête après la phrase en cours sans être tué (`pytest`) |
+| Texte des messages sélectionnable et copiable | **Testé** (affichage) | Rendu par le vrai lanceur ; la sélection à la souris est celle d'un champ Dear ImGui en lecture seule, non pilotée par un test automatique |
+| Lecture XTTS-v2, voix clonée depuis un extrait | **Testé** | Échantillon français d'XTTS-v2, même score |
+| Lecture F5-TTS français (RASPIAUDIO) | **Testé** | Voix clonée de l'échantillon français, mots de l'extrait retrouvés par la dictée, extrait converti en WAV 16 bits ; 6,7 % à la retranscription |
+| Lecture F5-TTS v1 Base (anglais) | **Testé** | Exemple anglais livré avec f5-tts ; 0 % à la retranscription |
+| Lecture d'un message stocké et réutilisation de l'audio | **Testé** (fixtures) | `pytest` : le texte lu est celui de la conversation, pas celui de l'appelant ; second appel `cached` |
+| Le processus vocal ne reçoit ni jeton ni clé | **Testé** (fixtures) | `pytest` : environnement capturé sans `CYTOOLS_TOKEN` ni `OPENAI_API_KEY`, `HF_HUB_OFFLINE=1` |
+| Onglet Voix et boutons Dicter / Lire à voix haute dans la fenêtre | **Testé** | Lanceur réel depuis un autre dossier, captures des onglets Voix et Discussion |
+| Enregistrement au micro et lecture sur les haut-parleurs | **Implémenté, non validé** | Le code passe par sounddevice ; personne n'a parlé ni écouté pendant les essais : la dictée en direct a été validée avec un enregistrement injecté à la place de la carte son |
+| Voix sur processeur (`tts` installé pour le CPU) | **Implémenté, non validé** | Seule l'installation CUDA a été exécutée |
+| Linux, macOS | **Non exposé** | Rien n'a été exécuté hors Windows |
+
+## 8. Ce qui n'est pas dans cette version
 
 - **Pièces jointes et images.** Non demandées pour cette livraison. Le serveur local est
   lancé avec `--no-mmproj-auto` et aucun champ d'entrée fichier n'est déclaré.

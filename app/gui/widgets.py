@@ -6,6 +6,7 @@ goes through `Async`: the frame starts it, keeps drawing, and picks up the resul
 frame. The window therefore never blocks on a provider that is slow or unreachable.
 """
 import threading
+from contextlib import contextmanager
 
 from ui_common import imgui
 
@@ -90,6 +91,30 @@ def wrapped(text, width=0.0):
     imgui.pop_text_wrap_pos()
 
 
+def selectable_text(identity, text):
+    """Wrapped text the mouse can select and Ctrl+C copies: a frameless read-only text box.
+
+    Plain text in Dear ImGui cannot be selected. A read-only multiline input can, and with
+    word wrap and no frame it looks like the text it replaces. Its height is measured so the
+    whole message shows without an inner scrollbar.
+    """
+    from imgui_bundle import ImVec2
+    style = imgui.get_style()
+    width = imgui.get_content_region_avail().x
+    # Measured slightly narrower than the box wraps, so the estimate never comes up short.
+    measured = imgui.calc_text_size(text, wrap_width=max(40.0, width - style.scrollbar_size))
+    height = measured.y + style.frame_padding.y * 2 + 2
+    imgui.push_style_color(imgui.Col_.frame_bg, (0.0, 0.0, 0.0, 0.0))
+    imgui.push_style_var(imgui.StyleVar_.frame_border_size, 0.0)
+    # No inner margin: the text lines up with the heading above it, like plain text would.
+    imgui.push_style_var(imgui.StyleVar_.frame_padding, (0.0, style.frame_padding.y))
+    flags = (imgui.InputTextFlags_.read_only | imgui.InputTextFlags_.word_wrap
+             | imgui.InputTextFlags_.no_horizontal_scroll)
+    imgui.input_text_multiline('##select-' + identity, text, ImVec2(-1, height), flags)
+    imgui.pop_style_var(2)
+    imgui.pop_style_color()
+
+
 def bytes_label(value):
     value = float(value or 0)
     for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB'):
@@ -102,10 +127,20 @@ def bytes_label(value):
 def status_dot(available, unknown=False):
     """A colour is a hint, never the only signal: the status word is always printed next.
 
-    The marker stays plain ASCII. The font the window ships with has no geometric shapes
-    block, so a round bullet has no glyph and renders as an empty box.
+    Drawn by CyUI as a circle on the draw list, so it needs no glyph from the font.
     """
-    colour = (0.55, 0.55, 0.55, 1.0) if unknown else \
-        ((0.36, 0.78, 0.45, 1.0) if available else (0.85, 0.45, 0.4, 1.0))
-    imgui.text_colored(colour, '[?]' if unknown else ('[+]' if available else '[-]'))
+    import cyui
+    p = cyui.palette()
+    cyui.status_dot(p.textFaint if unknown else (p.success if available else p.error))
     imgui.same_line()
+
+
+@contextmanager
+def card(identity, title='', height=0.0, tone='neutral'):
+    """`with card(...)`: a CyUI card whose end_card() is never forgotten."""
+    import cyui
+    shown = cyui.begin_card(identity, title, height, tone)
+    try:
+        yield shown
+    finally:
+        cyui.end_card()

@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 1,
+  "notes": "Speech weights run in the private speech environment (runtime/engines/speech). Every file is pinned to a repository revision, a size and a SHA-256, like the chat models. A file may name its own repository and revision when an entry needs parts published elsewhere, and its repository path when that differs from the local name. Word error rates quoted below were measured on this machine on 2026-10-06 (Windows SAPI clips and the synthetic French character takes of CyTools_PersonaRP).",
+  "stt": {
+    "parakeet-tdt-0.6b-v3": {
+      "name": "Parakeet TDT 0.6B v3 (25 languages, French included)",
+      "repo": "nvidia/parakeet-tdt-0.6b-v3",
+      "revision": "541d1f99c6b0c3cd0b11a95167540bb8edefd82b",
+      "page": "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
+      "license": "CC-BY-4.0",
+      "format": "parakeet",
+      "languages": [
+        "en",
+        "fr",
+        "de",
+        "es",
+        "it",
+        "pt",
+        "nl",
+        "pl",
+        "ro",
+        "sv",
+        "da",
+        "fi",
+        "el",
+        "hu",
+        "cs",
+        "sk",
+        "sl",
+        "hr",
+        "bg",
+        "et",
+        "lv",
+        "lt",
+        "mt",
+        "ru",
+        "uk"
+      ],
+      "ramGiB": 5,
+      "vramGiB": 3,
+      "notes": "NVIDIA's multilingual model, the teacher Phonon-2 was distilled from. The one to use in French: 6.4 % word error on the French test takes against 21.8 % for Phonon-2, and most of what remains is numbers written as digits and proper names. It detects the language by itself.",
+      "files": [
+        {
+          "name": "model.safetensors",
+          "size": 2508311120,
+          "sha256": "3a2026366188c8c68598edbbff92f8d11590a08e0ae2e6775544e7b07d6a5e11"
+        },
+        {
+          "name": "config.json",
+          "size": 1153,
+          "sha256": "e747b85e1bdfd300c8b8ac63bac8dd5221f8fe9bc275b48d06c735fcd6971b6e"
+        },
+        {
+          "name": "generation_config.json",
+          "size": 289,
+          "sha256": "b141de6ec6d7f982ece13f98f604e3fe1807ea9c0e839185d0ab7064604209d0"
+        },
+        {
+          "name": "processor_config.json",
+          "size": 392,
+          "sha256": "8346a93a3b987fa1dec57a78f045cd0817d21786589a5a096b41a57a446fd1d7"
+        },
+        {
+          "name": "tokenizer.json",
+          "size": 1159960,
+          "sha256": "bd321b096832a3f270bd3b2a88823957920f1a5c5ada71114a26ea729d0cbe91"
+        },
+        {
+          "name": "tokenizer_config.json",
+          "size": 290,
+          "sha256": "0b2fe0037599ee335f0b972fa682bf0ece74e4ccfec755cb7daa3405d3d3e874"
+        }
+      ]
+    },
+    "phonon-2": {
+      "name": "Phonon-2 (English, 164 MB)",
+      "repo": "FermionResearch/Phonon-2",
+      "revision": "ca1bef26bcd8ef4a7e16d0636d8a77bb25e298ee",
+      "page": "https://huggingface.co/FermionResearch/Phonon-2",
+      "license": "CC-BY-4.0 (weights), Apache-2.0 (code)",
+      "format": "phonon",
+      "languages": [
+        "en"
+      ],
+      "ramGiB": 5,
+      "vramGiB": 3,
+      "notes": "Parakeet TDT 0.6B v3 re-trained by Fermion Research with its encoder held at five learned values, about 2.1 bits a weight: a 164 MB download, 15 times smaller than its teacher. Built and scored for English. It also understands clear French (no error on a plain sentence here) but loses names and stylised voices: 21.8 % word error on the French test takes. The tokenizer and processor files come from the base model, as its reference code does.",
+      "unpack": "container",
+      "files": [
+        {
+          "name": "phonon-2.bps.tar.zst",
+          "size": 163515201,
+          "sha256": "98125795b6dda72f5c6eee9ba33d19815df65dcb18b50a357bf9f73c9935309e"
+        },
+        {
+          "name": "config.json",
+          "repo": "nvidia/parakeet-tdt-0.6b-v3",
+          "revision": "541d1f99c6b0c3cd0b11a95167540bb8edefd82b",
+          "size": 1153,
+          "sha256": "e747b85e1bdfd300c8b8ac63bac8dd5221f8fe9bc275b48d06c735fcd6971b6e"
+        },
+        {
+          "name": "generation_config.json",
+          "repo": "nvidia/parakeet-tdt-0.6b-v3",
+          "revision": "541d1f99c6b0c3cd0b11a95167540bb8edefd82b",
+          "size": 289,
+          "sha256": "b141de6ec6d7f982ece13f98f604e3fe1807ea9c0e839185d0ab7064604209d0"
+        },
+        {
+          "name": "processor_config.json",
+          "repo": "nvidia/parakeet-tdt-0.6b-v3",
+          "revision": "541d1f99c6b0c3cd0b11a95167540bb8edefd82b",
+          "size": 392,
+          "sha256": "8346a93a3b987fa1dec57a78f045cd0817d21786589a5a096b41a57a446fd1d7"
+        },
+        {
+          "name": "tokenizer.json",
+          "repo": "nvidia/parakeet-tdt-0.6b-v3",
+          "revision": "541d1f99c6b0c3cd0b11a95167540bb8edefd82b",
+          "size": 1159960,
+          "sha256": "bd321b096832a3f270bd3b2a88823957920f1a5c5ada71114a26ea729d0cbe91"
+        },
+        {
+          "name": "tokenizer_config.json",
+          "repo": "nvidia/parakeet-tdt-0.6b-v3",
+          "revision": "541d1f99c6b0c3cd0b11a95167540bb8edefd82b",
+          "size": 290,
+          "sha256": "0b2fe0037599ee335f0b972fa682bf0ece74e4ccfec755cb7daa3405d3d3e874"
+        }
+      ],
+      "archive": "phonon-2.bps.tar.zst",
+      "containerSha256": "4b6bfa3a12cc3c4e0a54f2ab3ec4ca7a842b09e5c7ecfc8e7ca0ac6cc8c11468"
+    }
+  },
+  "tts": {
+    "xtts-v2": {
+      "name": "XTTS-v2 (17 languages, French included)",
+      "repo": "coqui/XTTS-v2",
+      "revision": "6c2b0d75eae4b7047358e3b6bd9325f857d43f77",
+      "page": "https://huggingface.co/coqui/XTTS-v2",
+      "license": "Coqui Public Model License 1.0.0 (non-commercial)",
+      "family": "xtts",
+      "languages": [
+        "en",
+        "fr",
+        "es",
+        "de",
+        "it",
+        "pt",
+        "pl",
+        "tr",
+        "ru",
+        "nl",
+        "cs",
+        "ar",
+        "zh-cn",
+        "ja",
+        "hu",
+        "ko",
+        "hi"
+      ],
+      "ramGiB": 6,
+      "vramGiB": 4,
+      "notes": "Speaks French natively and comes with 58 built-in studio voices, so it works without any recording. It can also clone a voice from a short clip. The licence allows non-commercial use only, of the model and of what it produces.",
+      "files": [
+        {
+          "name": "model.pth",
+          "size": 1867929118,
+          "sha256": "c7ea20001c6a0a841c77e252d8409f6a74fb423e79b3206a0771ba5989776187"
+        },
+        {
+          "name": "config.json",
+          "size": 4368,
+          "sha256": "ef262b1454dd2a77e1461b0b2cd53e19b8a7624cc131b837d36df67356bc75e8"
+        },
+        {
+          "name": "vocab.json",
+          "size": 361219,
+          "sha256": "928260878a59da8a72a2a5b7687fea29d5106137669d90945430fe17e415304a"
+        },
+        {
+          "name": "speakers_xtts.pth",
+          "size": 7754818,
+          "sha256": "f0f6137c19a4eab0cbbe4c99b5babacf68b1746e50da90807708c10e645b943b"
+        },
+        {
+          "name": "fr_sample.wav",
+          "path": "samples/fr_sample.wav",
+          "size": 432186,
+          "sha256": "f2d86fada78ae2d062fdda550869f886f32a9072d79e43c8b4a892622c5279c8"
+        },
+        {
+          "name": "en_sample.wav",
+          "path": "samples/en_sample.wav",
+          "size": 299066,
+          "sha256": "2bb31e7bf2b1e6f98f21be9017f5daee44a40ca91126955485f430b272e1a8b5"
+        },
+        {
+          "name": "LICENSE.txt",
+          "size": 4014,
+          "sha256": "190f6d7c19b8984f91b97712b94ce92d2b2e640fc677dacab966e955ece9d043"
+        }
+      ]
+    },
+    "f5-tts-french": {
+      "name": "F5-TTS French (RASPIAUDIO, mixed speakers)",
+      "repo": "RASPIAUDIO/F5-French-MixedSpeakers-reduced",
+      "revision": "bcad6ae266c8406dc572b33d1d6ffced4db114fe",
+      "page": "https://huggingface.co/RASPIAUDIO/F5-French-MixedSpeakers-reduced",
+      "license": "CC-BY-NC-4.0 (non-commercial)",
+      "family": "f5",
+      "architecture": "F5TTS_Base",
+      "baseModel": "vocos-mel-24khz",
+      "languages": [
+        "fr"
+      ],
+      "ramGiB": 6,
+      "vramGiB": 4,
+      "notes": "F5-TTS fine-tuned on French public-domain LibriVox recordings. F5 always clones: it needs a voice clip and the exact words spoken in it. Recording or importing a voice in the Speech tab fills both, the words through speech to text.",
+      "files": [
+        {
+          "name": "model_last_reduced.pt",
+          "size": 1348767438,
+          "sha256": "812347d5dcd375e5d84fd3cb156468ca4ee99bd6fbe29d86f487a3c964b69e34"
+        },
+        {
+          "name": "vocab.txt",
+          "size": 13800,
+          "sha256": "2a05f992e00af9b0bd3800a8d23e78d520dbd705284ed2eedb5f4bd29398fa3c"
+        }
+      ],
+      "checkpoint": "model_last_reduced.pt"
+    },
+    "f5-tts-v1-base": {
+      "name": "F5-TTS v1 Base (English and Chinese)",
+      "repo": "SWivid/F5-TTS",
+      "revision": "84e5a410d9cead4de2f847e7c9369a6440bdfaca",
+      "page": "https://huggingface.co/SWivid/F5-TTS",
+      "license": "CC-BY-NC-4.0 (non-commercial)",
+      "family": "f5",
+      "architecture": "F5TTS_v1_Base",
+      "baseModel": "vocos-mel-24khz",
+      "languages": [
+        "en",
+        "zh"
+      ],
+      "ramGiB": 6,
+      "vramGiB": 4,
+      "notes": "The official F5-TTS checkpoint. It was trained on English and Chinese only: for French, use the French F5 model or XTTS-v2. Like every F5 model it clones a voice from a clip and its exact words.",
+      "files": [
+        {
+          "name": "model_1250000.safetensors",
+          "path": "F5TTS_v1_Base/model_1250000.safetensors",
+          "size": 1348435761,
+          "sha256": "670900fd14e6c458b95da6e9ed317cdb20dbaf7a1c02ac06a05475a9d32b6a38"
+        },
+        {
+          "name": "vocab.txt",
+          "path": "F5TTS_v1_Base/vocab.txt",
+          "size": 13800,
+          "sha256": "2a05f992e00af9b0bd3800a8d23e78d520dbd705284ed2eedb5f4bd29398fa3c"
+        }
+      ],
+      "checkpoint": "model_1250000.safetensors"
+    },
+    "vocos-mel-24khz": {
+      "name": "Vocos 24 kHz vocoder (used by F5-TTS)",
+      "repo": "charactr/vocos-mel-24khz",
+      "revision": "0feb3fdd929bcd6649e0e7c5a688cf7dd012ef21",
+      "page": "https://huggingface.co/charactr/vocos-mel-24khz",
+      "license": "MIT",
+      "family": "vocoder",
+      "component": true,
+      "languages": [],
+      "ramGiB": 1,
+      "vramGiB": 1,
+      "notes": "Turns the spectrogram F5-TTS produces into sound. Installed with the first F5 model.",
+      "files": [
+        {
+          "name": "config.yaml",
+          "size": 461,
+          "sha256": "da9033922f969a47f0c160010226919e59f27761fd5066f3828d46de6650b0fc"
+        },
+        {
+          "name": "pytorch_model.bin",
+          "size": 54365991,
+          "sha256": "97ec976ad1fd67a33ab2682d29c0ac7df85234fae875aefcc5fb215681a91b2a"
+        }
+      ]
+    }
+  }
+}

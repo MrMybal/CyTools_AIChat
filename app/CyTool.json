@@ -3,7 +3,7 @@
   "protocolVersion": "1.0",
   "id": "cy.tool.aichat",
   "name": "CyTools_AIChat",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A chat engine for connected agent CLIs, HTTP model APIs and local GGUF models with LoRA adapters. Conversations are kept on disk and opened in tabs in the standalone window.",
   "vendor": "Cyberalien",
   "author": "Cyberalien",
@@ -58,6 +58,14 @@
           "runtime": "Python 3.11.5, cytools-core 0.10.1 (MIT), imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
           "date": "2026-10-02",
           "status": "Re-run after the move to CyToolsCore 0.10.1, application 0.1.1: launcher started from another directory with the existing configuration (Chat, Updates and Options tabs, English), the CLI (describe, diagnostics), a real MCP session with two local GGUF turns, GGUF LoRA load and live rescale on CUDA, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures including the licence notices, the release archive build and its verification, and the pytest suite. Not re-run with this SDK version: Codex, Claude Code, Antigravity, Ollama and the French window. OpenCode, the paid HTTP APIs and a real GitHub release remain not executed."
+        },
+        {
+          "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+          "device": "NVIDIA GeForce RTX 3090 24 GB",
+          "driver": "610.47",
+          "runtime": "Python 3.11.5, cytools-core 0.10.1; speech: stt torch 2.8.0+cpu transformers 5.18.0, tts torch 2.8.0+cu128 transformers 4.57.3 coqui-tts 0.27.5 f5-tts 1.1.22",
+          "date": "2026-10-06",
+          "status": "Application 0.2.0, speech: both speech environments installed by the Tool's operation, the five speech models and the vocoder installed with their digests, transcription with Parakeet TDT 0.6B v3 (French) and Phonon-2 (English) on the CPU, reading aloud with XTTS-v2 (studio voices and a cloned clip, French and English) and F5-TTS (French and English) on CUDA, checked by transcribing the audio back, the Speech and Chat tabs of the window through the real launcher, and the pytest suite. Not executed: microphone recording and loudspeaker playback with a person speaking and listening, and the voice environment on the CPU."
         }
       ]
     },
@@ -1166,7 +1174,7 @@
     {
       "id": "model_list",
       "name": "List local weights",
-      "description": "Catalogue of downloadable GGUF models and LoRA adapters with their installation state.",
+      "description": "Catalogue of downloadable GGUF models, LoRA adapters and speech models with their installation state.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1175,9 +1183,12 @@
             "enum": [
               "",
               "model",
-              "lora"
+              "lora",
+              "stt",
+              "tts"
             ],
-            "default": ""
+            "default": "",
+            "description": "model and lora are chat weights; stt and tts are speech models."
           },
           "verify": {
             "type": "boolean",
@@ -1312,7 +1323,22 @@
           },
           "path": {
             "type": "string",
-            "description": "Installed file path."
+            "description": "Installed file path; the folder, for a speech model."
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Languages of a speech model."
+          },
+          "family": {
+            "type": "string",
+            "description": "Engine family of a speech model."
+          },
+          "component": {
+            "type": "boolean",
+            "description": "Installed for another model, not chosen directly."
           }
         },
         "required": [
@@ -1432,7 +1458,22 @@
         {
           "id": "path",
           "type": "Value",
-          "description": "Installed file path."
+          "description": "Installed file path; the folder, for a speech model."
+        },
+        {
+          "id": "languages",
+          "type": "Value",
+          "description": "Languages of a speech model."
+        },
+        {
+          "id": "family",
+          "type": "Value",
+          "description": "Engine family of a speech model."
+        },
+        {
+          "id": "component",
+          "type": "Value",
+          "description": "Installed for another model, not chosen directly."
         }
       ],
       "resourceRequirements": {
@@ -1917,6 +1958,1006 @@
       "exclusiveGroups": [
         "engine-files"
       ]
+    },
+    {
+      "id": "speech_status",
+      "name": "Speech status",
+      "description": "The two speech environments, the speech models with their installation state, the running speech workers and the speech settings.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "engines": {
+            "type": "object",
+            "description": "stt and tts environments."
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Speech catalogue rows (kinds stt and tts)."
+          },
+          "workers": {
+            "type": "object",
+            "description": "Running speech workers."
+          },
+          "settings": {
+            "type": "object",
+            "description": "Speech settings."
+          }
+        },
+        "required": [
+          "engines",
+          "models",
+          "workers",
+          "settings"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "engines",
+          "type": "Object",
+          "description": "stt and tts environments."
+        },
+        {
+          "id": "models",
+          "type": "Value",
+          "description": "Speech catalogue rows (kinds stt and tts)."
+        },
+        {
+          "id": "workers",
+          "type": "Object",
+          "description": "Running speech workers."
+        },
+        {
+          "id": "settings",
+          "type": "Object",
+          "description": "Speech settings."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "speech_engine_install",
+      "name": "Install a speech environment",
+      "description": "Create or repair a private Python environment for speech under runtime/engines: stt (PyTorch CPU and transformers 5, for Phonon-2 and Parakeet) or tts (PyTorch CUDA 12.8 or CPU, XTTS-v2 and F5-TTS). Downloads several gigabytes from PyPI and the PyTorch index. Speech models and voices in data/ are not touched.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "engine": {
+            "type": "string",
+            "enum": [
+              "stt",
+              "tts"
+            ]
+          },
+          "device": {
+            "type": "string",
+            "enum": [
+              "cuda",
+              "cpu"
+            ],
+            "default": "cuda",
+            "description": "PyTorch build for the tts environment. stt always uses the CPU."
+          }
+        },
+        "required": [
+          "engine"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "engine": {
+            "type": "string",
+            "description": "Environment."
+          },
+          "label": {
+            "type": "string",
+            "description": "Description."
+          },
+          "directory": {
+            "type": "string",
+            "description": "Folder."
+          },
+          "installed": {
+            "type": "boolean"
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "estimatedBytes": {
+            "type": "integer"
+          },
+          "cuda": {
+            "type": "boolean"
+          },
+          "cpuOnly": {
+            "type": "boolean"
+          },
+          "device": {
+            "type": "string",
+            "description": "Device found."
+          },
+          "torch": {
+            "type": "string",
+            "description": "PyTorch version."
+          },
+          "installedAt": {
+            "type": "string",
+            "description": "Date."
+          }
+        },
+        "required": [
+          "engine",
+          "label",
+          "directory",
+          "installed",
+          "families",
+          "estimatedBytes",
+          "cuda",
+          "cpuOnly",
+          "device",
+          "torch",
+          "installedAt"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "engine",
+          "type": "Value",
+          "description": "Environment."
+        },
+        {
+          "id": "label",
+          "type": "Value",
+          "description": "Description."
+        },
+        {
+          "id": "directory",
+          "type": "Value",
+          "description": "Folder."
+        },
+        {
+          "id": "installed",
+          "type": "Value",
+          "description": "installed"
+        },
+        {
+          "id": "families",
+          "type": "Value",
+          "description": "families"
+        },
+        {
+          "id": "estimatedBytes",
+          "type": "Value",
+          "description": "estimatedBytes"
+        },
+        {
+          "id": "cuda",
+          "type": "Value",
+          "description": "cuda"
+        },
+        {
+          "id": "cpuOnly",
+          "type": "Value",
+          "description": "cpuOnly"
+        },
+        {
+          "id": "device",
+          "type": "Value",
+          "description": "Device found."
+        },
+        {
+          "id": "torch",
+          "type": "Value",
+          "description": "PyTorch version."
+        },
+        {
+          "id": "installedAt",
+          "type": "Value",
+          "description": "Date."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "network",
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "stt-engine",
+        "tts-engine"
+      ]
+    },
+    {
+      "id": "speech_engine_remove",
+      "name": "Remove a speech environment",
+      "description": "Delete runtime/engines/stt or runtime/engines/tts. Models and voices stay.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "engine": {
+            "type": "string",
+            "enum": [
+              "stt",
+              "tts"
+            ]
+          }
+        },
+        "required": [
+          "engine"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "engine": {
+            "type": "string",
+            "description": "Environment."
+          },
+          "removed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "engine",
+          "removed"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "engine",
+          "type": "Value",
+          "description": "Environment."
+        },
+        {
+          "id": "removed",
+          "type": "Value",
+          "description": "removed"
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false,
+      "exclusiveGroups": [
+        "stt-engine",
+        "tts-engine"
+      ]
+    },
+    {
+      "id": "speech_settings",
+      "name": "Speech settings",
+      "description": "Read or change the speech preferences. A field left out keeps its value.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stt_model": {
+            "type": "string",
+            "description": "Speech-to-text model id. Empty picks the best installed one."
+          },
+          "tts_model": {
+            "type": "string",
+            "description": "Voice model id. Empty picks an installed one that speaks the language."
+          },
+          "voice": {
+            "type": "string",
+            "description": "Voice id (voice_list). Empty picks a default for the model."
+          },
+          "language": {
+            "type": "string",
+            "description": "auto, or a code such as fr or en."
+          },
+          "speed": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 2.0
+          },
+          "tts_device": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "cuda",
+              "cpu"
+            ]
+          },
+          "auto_read": {
+            "type": "boolean",
+            "description": "Read new replies aloud in the window."
+          },
+          "live_dictation": {
+            "type": "boolean",
+            "description": "Show the words in the window while you speak."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "settings": {
+            "type": "object",
+            "description": "The stored settings."
+          }
+        },
+        "required": [
+          "settings"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "settings",
+          "type": "Object",
+          "description": "The stored settings."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "transcribe",
+      "name": "Transcribe speech",
+      "description": "Speech to text with Phonon-2 (English) or Parakeet TDT 0.6B v3 (25 languages, French included), on the CPU. The model stays loaded for the next request.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "audio": {
+            "type": "string",
+            "description": "Audio file: an absolute path anywhere on this machine, or a name inside data/inputs. WAV, FLAC, OGG or MP3. It is copied for the job and the original is left untouched.",
+            "x-cy-kind": "File"
+          },
+          "model": {
+            "type": "string",
+            "description": "Speech-to-text model id. Empty uses the settings, then the best installed model for the language.",
+            "default": ""
+          },
+          "language": {
+            "type": "string",
+            "description": "Expected language, used only to choose the model: en prefers Phonon-2. The models detect the language themselves.",
+            "default": ""
+          }
+        },
+        "required": [
+          "audio"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "What was said."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model used."
+          },
+          "audioSeconds": {
+            "type": "number"
+          },
+          "seconds": {
+            "type": "number"
+          },
+          "loadSeconds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "text",
+          "model",
+          "audioSeconds",
+          "seconds",
+          "loadSeconds"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "text",
+          "type": "Value",
+          "description": "What was said."
+        },
+        {
+          "id": "model",
+          "type": "Value",
+          "description": "Model used."
+        },
+        {
+          "id": "audioSeconds",
+          "type": "Value",
+          "description": "audioSeconds"
+        },
+        {
+          "id": "seconds",
+          "type": "Value",
+          "description": "seconds"
+        },
+        {
+          "id": "loadSeconds",
+          "type": "Value",
+          "description": "loadSeconds"
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "stt-engine"
+      ]
+    },
+    {
+      "id": "transcribe_live",
+      "name": "Transcribe while recording",
+      "description": "Follow a recording the desktop window is writing (data/inputs/dictation/live-<id>.pcm, 16-bit mono PCM) and publish DictationPartial events with the text so far, about every half second of new speech. Sentences are closed at pauses and their words become final; the sentence being spoken may still change. The job ends when the window creates <name>.done and returns the whole text. Meant for the window; give a file to transcribe instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stream": {
+            "type": "string",
+            "description": "Name of the live recording in data/inputs/dictation."
+          },
+          "rate": {
+            "type": "integer",
+            "minimum": 8000,
+            "maximum": 192000,
+            "description": "Sample rate of the recording."
+          },
+          "model": {
+            "type": "string",
+            "description": "Speech-to-text model id. Empty uses the settings.",
+            "default": ""
+          },
+          "language": {
+            "type": "string",
+            "description": "Expected language, used only to choose the model.",
+            "default": ""
+          },
+          "max_seconds": {
+            "type": "number",
+            "minimum": 5,
+            "maximum": 3600,
+            "default": 600
+          }
+        },
+        "required": [
+          "stream",
+          "rate"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Everything that was said."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model used."
+          },
+          "audioSeconds": {
+            "type": "number"
+          },
+          "passes": {
+            "type": "integer"
+          },
+          "seconds": {
+            "type": "number"
+          },
+          "loadSeconds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "text",
+          "model",
+          "audioSeconds",
+          "passes",
+          "seconds",
+          "loadSeconds"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "text",
+          "type": "Value",
+          "description": "Everything that was said."
+        },
+        {
+          "id": "model",
+          "type": "Value",
+          "description": "Model used."
+        },
+        {
+          "id": "audioSeconds",
+          "type": "Value",
+          "description": "audioSeconds"
+        },
+        {
+          "id": "passes",
+          "type": "Value",
+          "description": "passes"
+        },
+        {
+          "id": "seconds",
+          "type": "Value",
+          "description": "seconds"
+        },
+        {
+          "id": "loadSeconds",
+          "type": "Value",
+          "description": "loadSeconds"
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "stt-engine"
+      ]
+    },
+    {
+      "id": "speak",
+      "name": "Read text aloud",
+      "description": "Text to speech with XTTS-v2 or F5-TTS. Give a text, or a conversation and one of its messages to read a stored reply. The audio of a stored reply is kept in data/speech and reused when the same reply is read again with the same voice.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to read. Ignored when conversation and message are given.",
+            "default": "",
+            "x-cy-kind": "MultilineString"
+          },
+          "conversation": {
+            "type": "string",
+            "description": "Conversation id, to read one of its messages.",
+            "default": ""
+          },
+          "message": {
+            "type": "string",
+            "description": "Message id within that conversation.",
+            "default": ""
+          },
+          "model": {
+            "type": "string",
+            "description": "Voice model id. Empty uses the settings.",
+            "default": ""
+          },
+          "voice": {
+            "type": "string",
+            "description": "Voice id from voice_list. Empty uses the settings, then a default.",
+            "default": ""
+          },
+          "language": {
+            "type": "string",
+            "description": "auto, or a code such as fr or en. Empty uses the settings.",
+            "default": ""
+          },
+          "speed": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 2.0,
+            "description": "Speaking rate. Empty uses the settings."
+          },
+          "device": {
+            "type": "string",
+            "enum": [
+              "",
+              "auto",
+              "cuda",
+              "cpu"
+            ],
+            "default": ""
+          },
+          "progressive": {
+            "type": "boolean",
+            "default": false,
+            "description": "Publish a SpeechPiece event with a WAV file for each sentence as soon as it is made, so playback can start before the whole text is ready. The pieces are written to data/speech/pieces; whoever plays them deletes them. Cancelling stops after the current sentence."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "audio": {
+            "type": "string",
+            "description": "WAV file (16-bit PCM).",
+            "x-cy-kind": "File"
+          },
+          "durationSeconds": {
+            "type": "number"
+          },
+          "model": {
+            "type": "string",
+            "description": "Model used."
+          },
+          "voice": {
+            "type": "string",
+            "description": "Voice id used."
+          },
+          "voiceName": {
+            "type": "string",
+            "description": "Voice name."
+          },
+          "language": {
+            "type": "string",
+            "description": "Language spoken."
+          },
+          "cached": {
+            "type": "boolean",
+            "description": "Reused from an earlier reading."
+          },
+          "seconds": {
+            "type": "number"
+          },
+          "device": {
+            "type": "string",
+            "description": "cuda or cpu."
+          }
+        },
+        "required": [
+          "audio",
+          "durationSeconds",
+          "model",
+          "voice",
+          "voiceName",
+          "language",
+          "cached",
+          "seconds",
+          "device"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "audio",
+          "type": "File",
+          "description": "WAV file (16-bit PCM)."
+        },
+        {
+          "id": "durationSeconds",
+          "type": "Value",
+          "description": "durationSeconds"
+        },
+        {
+          "id": "model",
+          "type": "Value",
+          "description": "Model used."
+        },
+        {
+          "id": "voice",
+          "type": "Value",
+          "description": "Voice id used."
+        },
+        {
+          "id": "voiceName",
+          "type": "Value",
+          "description": "Voice name."
+        },
+        {
+          "id": "language",
+          "type": "Value",
+          "description": "Language spoken."
+        },
+        {
+          "id": "cached",
+          "type": "Value",
+          "description": "Reused from an earlier reading."
+        },
+        {
+          "id": "seconds",
+          "type": "Value",
+          "description": "seconds"
+        },
+        {
+          "id": "device",
+          "type": "Value",
+          "description": "cuda or cpu."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "tts-engine"
+      ]
+    },
+    {
+      "id": "voice_list",
+      "name": "List voices",
+      "description": "Recorded and imported voices, the sample clips of installed models and the XTTS-v2 studio voices.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "voices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "id, name, kind (recorded, sample, studio), language, transcript, clip, families."
+            }
+          }
+        },
+        "required": [
+          "voices"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "voices",
+          "type": "Value",
+          "description": "voices"
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": false
+    },
+    {
+      "id": "voice_add",
+      "name": "Add a voice",
+      "description": "Keep a clip as a voice to imitate. Its words are found by speech to text unless you give them: F5-TTS needs them, XTTS-v2 does not.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "audio": {
+            "type": "string",
+            "description": "Audio file: an absolute path anywhere on this machine, or a name inside data/inputs. WAV, FLAC, OGG or MP3. It is copied for the job and the original is left untouched.",
+            "x-cy-kind": "File"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name shown in the voice list.",
+            "default": ""
+          },
+          "language": {
+            "type": "string",
+            "description": "Language spoken in the clip, such as fr or en.",
+            "default": ""
+          },
+          "transcript": {
+            "type": "string",
+            "description": "The exact words spoken in the clip.",
+            "default": ""
+          },
+          "transcribe": {
+            "type": "boolean",
+            "default": true,
+            "description": "Find the words by speech to text when none are given."
+          }
+        },
+        "required": [
+          "audio"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "voice": {
+            "type": "object",
+            "description": "id, name, kind (recorded, sample, studio), language, transcript, clip, families."
+          }
+        },
+        "required": [
+          "voice"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "voice",
+          "type": "Object",
+          "description": "id, name, kind (recorded, sample, studio), language, transcript, clip, families."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [
+        "processSpawn"
+      ],
+      "canRunAsync": true,
+      "canCancel": true,
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "stt-engine"
+      ]
+    },
+    {
+      "id": "voice_delete",
+      "name": "Delete a voice",
+      "description": "Move a recorded or imported voice to data/voices/deleted.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "voice": {
+            "type": "string",
+            "description": "Voice id."
+          }
+        },
+        "required": [
+          "voice"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "voice": {
+            "type": "string",
+            "description": "Voice id."
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "keptIn": {
+            "type": "string",
+            "description": "Where the voice was moved."
+          }
+        },
+        "required": [
+          "voice",
+          "deleted",
+          "keptIn"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "voice",
+          "type": "Value",
+          "description": "Voice id."
+        },
+        {
+          "id": "deleted",
+          "type": "Value",
+          "description": "deleted"
+        },
+        {
+          "id": "keptIn",
+          "type": "Value",
+          "description": "Where the voice was moved."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
+    },
+    {
+      "id": "speech_unload",
+      "name": "Unload the speech models",
+      "description": "Stop both speech workers and free the memory they hold.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "stopped": {
+            "type": "object",
+            "description": "Which workers were running."
+          }
+        },
+        "required": [
+          "stopped"
+        ],
+        "additionalProperties": false
+      },
+      "outputs": [
+        {
+          "id": "stopped",
+          "type": "Object",
+          "description": "Which workers were running."
+        }
+      ],
+      "resourceRequirements": {
+        "ramBytes": 67108864,
+        "cpuThreads": 1
+      },
+      "supportedBackends": [],
+      "permissions": [],
+      "canRunAsync": true,
+      "canCancel": false,
+      "supportsProgress": false
     },
     {
       "id": "resident_status",
@@ -2769,6 +3810,14 @@
               "runtime": "Python 3.11.5, cytools-core 0.10.1 (MIT), imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
               "date": "2026-10-02",
               "status": "Re-run after the move to CyToolsCore 0.10.1, application 0.1.1: launcher started from another directory with the existing configuration (Chat, Updates and Options tabs, English), the CLI (describe, diagnostics), a real MCP session with two local GGUF turns, GGUF LoRA load and live rescale on CUDA, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures including the licence notices, the release archive build and its verification, and the pytest suite. Not re-run with this SDK version: Codex, Claude Code, Antigravity, Ollama and the French window. OpenCode, the paid HTTP APIs and a real GitHub release remain not executed."
+            },
+            {
+              "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+              "device": "NVIDIA GeForce RTX 3090 24 GB",
+              "driver": "610.47",
+              "runtime": "Python 3.11.5, cytools-core 0.10.1; speech: stt torch 2.8.0+cpu transformers 5.18.0, tts torch 2.8.0+cu128 transformers 4.57.3 coqui-tts 0.27.5 f5-tts 1.1.22",
+              "date": "2026-10-06",
+              "status": "Application 0.2.0, speech: both speech environments installed by the Tool's operation, the five speech models and the vocoder installed with their digests, transcription with Parakeet TDT 0.6B v3 (French) and Phonon-2 (English) on the CPU, reading aloud with XTTS-v2 (studio voices and a cloned clip, French and English) and F5-TTS (French and English) on CUDA, checked by transcribing the audio back, the Speech and Chat tabs of the window through the real launcher, and the pytest suite. Not executed: microphone recording and loudspeaker playback with a person speaking and listening, and the voice environment on the CPU."
             }
           ]
         },
@@ -2931,6 +3980,14 @@
               "runtime": "Python 3.11.5, cytools-core 0.10.1 (MIT), imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
               "date": "2026-10-02",
               "status": "Re-run after the move to CyToolsCore 0.10.1, application 0.1.1: launcher started from another directory with the existing configuration (Chat, Updates and Options tabs, English), the CLI (describe, diagnostics), a real MCP session with two local GGUF turns, GGUF LoRA load and live rescale on CUDA, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures including the licence notices, the release archive build and its verification, and the pytest suite. Not re-run with this SDK version: Codex, Claude Code, Antigravity, Ollama and the French window. OpenCode, the paid HTTP APIs and a real GitHub release remain not executed."
+            },
+            {
+              "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+              "device": "NVIDIA GeForce RTX 3090 24 GB",
+              "driver": "610.47",
+              "runtime": "Python 3.11.5, cytools-core 0.10.1; speech: stt torch 2.8.0+cpu transformers 5.18.0, tts torch 2.8.0+cu128 transformers 4.57.3 coqui-tts 0.27.5 f5-tts 1.1.22",
+              "date": "2026-10-06",
+              "status": "Application 0.2.0, speech: both speech environments installed by the Tool's operation, the five speech models and the vocoder installed with their digests, transcription with Parakeet TDT 0.6B v3 (French) and Phonon-2 (English) on the CPU, reading aloud with XTTS-v2 (studio voices and a cloned clip, French and English) and F5-TTS (French and English) on CUDA, checked by transcribing the audio back, the Speech and Chat tabs of the window through the real launcher, and the pytest suite. Not executed: microphone recording and loudspeaker playback with a person speaking and listening, and the voice environment on the CPU."
             }
           ]
         },

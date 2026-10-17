@@ -1,0 +1,34 @@
+# Text-to-speech environment (runtime/engines/tts), separate from the window's runtime.
+# PyTorch (CUDA 12.8, or CPU) is installed first and pinned: see app/speech-engines.json.
+#
+# XTTS-v2 relies on transformers 4 internals that transformers 5 removed, hence 4.57 here and
+# a huggingface-hub and datasets of the same generation.
+transformers==4.57.3
+huggingface-hub==0.36.2
+datasets==4.8.5
+coqui-tts==0.27.5
+librosa==0.11.0
+soundfile==0.13.1
+#
+# f5-tts 1.1.22 is installed afterwards without its declared dependencies (speech-engines.json,
+# "withoutDependencies"): it declares gradio>=6.15 for its web demo, and that gradio needs a
+# huggingface-hub the transformers above refuses. What its inference really imports:
+accelerate==1.15.0
+cached_path==1.8.10
+click==8.5.0
+ema-pytorch==0.8.3
+hydra-core==1.3.7
+omegaconf==2.3.1
+matplotlib==3.11.2
+pydub==0.25.1
+pypinyin==0.55.0
+rjieba==0.2.1
+safetensors==0.8.0
+tomli==2.4.1
+torchdiffeq==0.2.5
+transformers-stream-generator==0.0.5
+Unidecode==1.4.0
+vocos==0.1.0
+x-transformers==2.31.7
+# Imported at load time by f5_tts.model.trainer, which f5_tts.api pulls in.
+wandb==0.30.0

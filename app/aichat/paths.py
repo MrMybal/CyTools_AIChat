@@ -23,6 +23,10 @@ REPORTS = DATA / 'reports'
 EXPORTS = DATA / 'exports'
 LLM_MODELS = DATA / 'models/llm'
 LORA_MODELS = DATA / 'models/lora'
+SPEECH_MODELS = DATA / 'models/speech'
+VOICES = DATA / 'voices'
+SPEECH = DATA / 'speech'
+INPUTS = DATA / 'inputs'
 
 TOOL_ID = 'cy.tool.aichat'
 
@@ -45,6 +49,7 @@ def write_json(path, value):
 
 def ensure_tree():
     for directory in (CONVERSATIONS, PRESETS, SETTINGS, LOGS, REPORTS, EXPORTS,
-                      LLM_MODELS, LORA_MODELS, DATA / 'jobs', DATA / 'inputs',
+                      LLM_MODELS, LORA_MODELS, SPEECH_MODELS, VOICES, SPEECH, DATA / 'jobs',
+                      INPUTS,
                       RUNTIME / 'engines', RUNTIME / 'downloads', RUNTIME / 'updates'):
         directory.mkdir(parents=True, exist_ok=True)

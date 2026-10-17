@@ -22,9 +22,27 @@ CyToolsCore SDK 0.10.1 - MIT, Copyright (c) 2026 Cyberalien
     https://github.com/MrMybal/CyToolsCore/blob/main/Docs/Licensing.md
     https://github.com/MrMybal/CyToolsCore/blob/main/Docs/UpdateExistingProducts.md
 
+CyUI (Python port) - MIT, Copyright (c) 2026 Cyberalien
+  Licence text: LICENCES/CyUI-MIT.txt
+  File:         app/cyui.py, an unchanged copy of python/cyui.py from the CyImgui_Interface
+                project by the same author (sha256 ac907847bd917ea9e8b9a6d38a35c040fb7909e2
+                78e77b7722cecfff2f042cdb). Themes, fonts and widgets of the window.
+  The fonts it loads (Segoe UI, Segoe UI Semibold, Consolas, Segoe MDL2 Assets) are read
+  from the Windows fonts folder at start-up; none is shipped with this product.
+
 cyai_connectors - connector library vendored in app/aichat/vendor/cyai_connectors
   Origin: CyAI Connector Lab, by the same author (Cyberalien). No separate licence file
   is published for it; it is distributed here by its author as part of this product.
+
+fermion_container.py - Apache-2.0, Copyright 2026 Fermion Research
+  Licence text: LICENCES/Apache-2.0.txt
+  File:         app/aichat/vendor/fermion_container.py, unchanged below its header
+  Source:       https://huggingface.co/FermionResearch/Phonon-2 (revision
+                ca1bef26bcd8ef4a7e16d0636d8a77bb25e298ee, SHA-256
+                5cf172e8cf6b313e951c4ef588ca913c7285b0aa3b92de413c3d7ec2b939c0e4)
+  Reads the Phonon-2 container. The expansion to a transformers state dict in
+  app/aichat/speech_worker.py follows reference_transformers.py from the same repository
+  (Apache-2.0).
 
 Related SDK, not included in this product
 -----------------------------------------
@@ -50,3 +68,29 @@ app/llm-catalog.json and app/licenses.json.
 
 Agent command lines (codex, claude, agy, opencode) are separate programs installed and
 signed in by the user. This Tool starts them; it never redistributes them.
+
+Speech environments (runtime/engines/stt and runtime/engines/tts) are created on request by
+pip from app/requirements-speech-stt.txt and app/requirements-speech-tts.txt: PyTorch
+(BSD-3-Clause, https://pytorch.org), transformers (Apache-2.0,
+https://github.com/huggingface/transformers), coqui-tts (MPL-2.0,
+https://github.com/idiap/coqui-ai-TTS), f5-tts (MIT, https://github.com/SWivid/F5-TTS) and
+their dependencies, each with its own licence in its package metadata. The CUDA build of
+PyTorch brings NVIDIA CUDA libraries under the NVIDIA CUDA Toolkit EULA. The window's runtime
+also installs sounddevice (MIT, https://github.com/spatialaudio/python-sounddevice), which
+ships PortAudio (MIT).
+
+Speech models are downloaded from the Speech tab after the user accepts each licence:
+  Phonon-2 (Fermion Research)              CC-BY-4.0 weights, Apache-2.0 code
+    https://huggingface.co/FermionResearch/Phonon-2
+  Parakeet TDT 0.6B v3 (NVIDIA)            CC-BY-4.0
+    https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3
+  XTTS-v2 (Coqui)                          Coqui Public Model License 1.0.0, non-commercial
+    https://huggingface.co/coqui/XTTS-v2   (https://coqui.ai/cpml.txt)
+  F5-TTS v1 Base (SWivid)                  CC-BY-NC-4.0, non-commercial
+    https://huggingface.co/SWivid/F5-TTS
+  F5-TTS French (RASPIAUDIO)               CC-BY-NC-4.0, non-commercial
+    https://huggingface.co/RASPIAUDIO/F5-French-MixedSpeakers-reduced
+  Vocos mel 24 kHz (charactr)              MIT
+    https://huggingface.co/charactr/vocos-mel-24khz
+Their pinned revisions and digests are in app/speech-catalog.json. The non-commercial
+licences also cover the audio those models produce.

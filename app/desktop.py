@@ -19,9 +19,10 @@ if str(APP) not in sys.path:
 
 from imgui_bundle import hello_imgui  # noqa: E402
 
-from ui_common import configure_generation, imgui, label, run, tr  # noqa: E402
+from ui_common import configure_generation, imgui, run, tr  # noqa: E402
 
-from gui import chat_panel, models_panel, providers_panel, updates_panel  # noqa: E402
+from gui import (chat_panel, models_panel, providers_panel, speech_panel,  # noqa: E402
+                 updates_panel)
 from gui.state import Interface  # noqa: E402
 from tool import create_runtime  # noqa: E402
 
@@ -39,6 +40,71 @@ def chat_schema():
         _chat_schema = next(op for op in document['operations']
                             if op['id'] == 'chat')['inputSchema']
     return _chat_schema
+
+
+class ScriptedMicrophone:
+    """`--smoke-dictate FILE`: a WAV played into the recorder at the pace of speech.
+
+    Only the sound card is replaced. The recorder, the live file, the transcribe_live job, its
+    events and the message box are the ones a click on Dictate uses, so the run is evidence of
+    the real live path, not of a mock.
+    """
+
+    def __init__(self, recorder, clip):
+        import wave
+
+        import numpy as np
+        with wave.open(str(clip), 'rb') as source:
+            rate, channels = source.getframerate(), source.getnchannels()
+            width = source.getsampwidth()
+            frames = source.readframes(source.getnframes())
+        audio = np.frombuffer(frames, dtype={2: '<i2', 4: '<i4'}[width]).astype(np.float32)
+        audio /= float(2 ** (8 * width - 1))
+        if channels > 1:
+            audio = audio.reshape(-1, channels).mean(axis=1)
+        if rate != 16000:
+            positions = np.arange(0, len(audio), rate / 16000.0)
+            audio = np.interp(positions, np.arange(len(audio)), audio).astype(np.float32)
+        self.audio = audio
+        self.recorder = recorder
+        self.finished = False
+        self.fed = 0.0
+        recorder.start = self.start
+
+    def start(self, purpose, limit=120.0, device=None, live=None):
+        import threading
+        import time
+
+        import numpy as np
+        recorder = self.recorder
+        recorder.blocks, recorder.level, recorder.error = [], 0.0, ''
+        recorder.purpose, recorder.limit, recorder.written, recorder.rate = purpose, limit, 0, 16000
+        recorder.live = Path(live) if live else None
+        if recorder.live is not None:
+            recorder.live.parent.mkdir(parents=True, exist_ok=True)
+            recorder.live.write_bytes(b'')
+
+        class Card:
+            def stop(self):
+                pass
+
+            close = stop
+
+        recorder.stream = Card()
+
+        def feed():
+            step = 1600
+            for index in range(0, len(self.audio), step):
+                block = self.audio[index:index + step]
+                with recorder.lock:
+                    recorder.blocks.append(block)
+                    recorder.level = float(np.sqrt(np.mean(np.square(block))))
+                self.fed = (index + step) / 16000.0
+                time.sleep(0.1)
+            self.finished = True
+
+        threading.Thread(target=feed, daemon=True).start()
+        return True
 
 
 def smoke_option(name, default=''):
@@ -133,9 +199,39 @@ def check_configuration_round_trip(runtime, session_ui, capture, restore):
     print('configuration round trip:', 'identical' if not problems else problems)
 
 
+def show_running_window():
+    """Bring the window that is already open to the front, or say it is open. Windows only.
+
+    The data directory belongs to one runtime at a time. A second launch used to stop right
+    there with only a line in the log, so a double-click seemed to do nothing while the old
+    window, possibly running older code, stayed in the background.
+    """
+    if sys.platform != 'win32':
+        return False
+    import ctypes
+    user32 = ctypes.windll.user32
+    window = user32.FindWindowW(None, WINDOW_TITLE)
+    if window:
+        user32.ShowWindow(window, 9)                        # SW_RESTORE
+        user32.SetForegroundWindow(window)
+        return True
+    user32.MessageBoxW(None, tr('CyTools_AIChat is already running: its data folder is in use. '
+                                'Close the other window, then start it again.'),
+                       WINDOW_TITLE, 0x40)
+    return True
+
+
 def main():
     from branding import configure as configure_branding
     configure_branding('Cyberalien.CyTools_AIChat')
+    from cytools_core import CyToolError
+    try:
+        owned = create_runtime(ROOT / 'data/jobs')
+    except CyToolError as exc:
+        if exc.code == 'Busy' and '--smoke-test' not in sys.argv and show_running_window():
+            print('Another window already owns the data folder; it was brought to the front.')
+            return
+        raise
     runner = hello_imgui.RunnerParams()
     runner.app_window_params.window_title = WINDOW_TITLE
     runner.app_window_params.window_geometry.size = (1320, 880)
@@ -143,7 +239,7 @@ def main():
     runner.ini_filename = str(ROOT / 'data/settings/imgui.ini')
     frames = 0
 
-    with create_runtime(ROOT / 'data/jobs') as runtime:
+    with owned as runtime:
         token = runtime.create_client('ImGui', ['network', 'processSpawn', 'filesystemExternal',
                                                 'manageResources'])['token']
         actor = runtime.authenticate(token)
@@ -156,14 +252,19 @@ def main():
         session_ui = Interface(runtime, actor, session)
 
         panels = (('Chat', chat_panel), ('Providers', providers_panel),
-                  ('Models', models_panel), ('Updates', updates_panel))
+                  ('Models', models_panel), ('Speech', speech_panel), ('Updates', updates_panel))
         smoke = '--smoke-test' in sys.argv
         wanted = smoke_tab() if smoke else ''
         # A scripted turn: it exercises exactly the path a click on Send takes, so the
         # screenshot afterwards is evidence of the real streaming path, not of a mock.
         smoke_message = smoke_option('smoke-send')
+        settled = [0]
         smoke_sent = [False]
         smoke_done = [False]
+        dictation_clip = smoke_option('smoke-dictate')
+        microphone = ScriptedMicrophone(session_ui.recorder, dictation_clip) \
+            if smoke and dictation_clip else None
+        dictation = {'started': 0.0, 'stopped': False, 'last': None, 'shot': False}
 
         def gui():
             nonlocal frames
@@ -172,7 +273,7 @@ def main():
             if imgui.begin_tab_bar('###aichat-navigation'):
                 for name, panel in panels:
                     flags = imgui.TabItemFlags_.set_selected if smoke and name == wanted else 0
-                    opened, _ = imgui.begin_tab_item(label(name), None, flags)
+                    opened, _ = imgui.begin_tab_item(name, None, flags)   # the facade translates
                     if opened:
                         panel.draw(session_ui)
                         imgui.end_tab_item()
@@ -189,6 +290,29 @@ def main():
                 tab.input = smoke_message
                 session_ui.send(tab)
                 smoke_sent[0] = True
+            if microphone is not None and frames > SMOKE_FRAMES:
+                import time
+                tab = session_ui.find(session_ui.selected) or session_ui.tabs[0]
+                if not dictation['started']:
+                    dictation['started'] = time.monotonic()
+                    session_ui.start_dictation(tab)
+                    print('dictation started: %s' % (tab.error or 'listening'))
+                elapsed = time.monotonic() - dictation['started']
+                if tab.input != dictation['last']:
+                    dictation['last'] = tab.input
+                    print('%5.1fs (spoken %4.1fs) message box: %s'
+                          % (elapsed, microphone.fed, tab.input[-110:]))
+                if not dictation['shot'] and microphone.fed > len(microphone.audio) / 16000.0 * 0.6:
+                    dictation['shot'] = True
+                    save_smoke_screenshot('dictation-live')
+                if microphone.finished and not dictation['stopped']:
+                    dictation['stopped'] = True
+                    session_ui.stop_dictation(tab)
+                if dictation['stopped'] and not session_ui.dictating(tab) or tab.error \
+                        or elapsed > 300:
+                    print('dictation finished after %.1fs; error: %s' % (elapsed, tab.error or 'none'))
+                    runner.app_shall_exit = True
+                return
             if smoke and smoke_message and smoke_sent[0]:
                 tab = session_ui.find(session_ui.selected) or session_ui.tabs[0]
                 # Leave as soon as the turn is over, or when it never started at all, but
@@ -208,7 +332,11 @@ def main():
                 panel = dict(panels).get(wanted)
                 ready = getattr(panel, 'smoke_ready', None)
                 if ready is None or ready() or frames > SMOKE_FRAMES * 80:
-                    runner.app_shall_exit = True
+                    # Cards size themselves from the frame before: give the content that just
+                    # arrived a few frames to settle before the screenshot is taken.
+                    settled[0] += 1
+                    if settled[0] > 8:
+                        runner.app_shall_exit = True
 
         def capture_config():
             """What Save configuration writes: the active conversation, as a chat call."""
@@ -270,7 +398,8 @@ def main():
         runner.callbacks.show_gui = gui
         run(runner)
         if smoke:
-            saved = save_smoke_screenshot('chat-turn' if smoke_message else wanted)
+            saved = save_smoke_screenshot('dictation-final' if microphone is not None else
+                                          'chat-turn' if smoke_message else wanted)
             print('smoke tab %s rendered %d frames; screenshot: %s'
                   % (wanted, frames, saved or 'not captured'))
             if smoke_message:

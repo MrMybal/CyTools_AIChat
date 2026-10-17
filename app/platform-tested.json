@@ -16,6 +16,14 @@
       "runtime": "Python 3.11.5, cytools-core 0.10.1 (MIT), imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
       "date": "2026-10-02",
       "status": "Re-run after the move to CyToolsCore 0.10.1, application 0.1.1: launcher started from another directory with the existing configuration (Chat, Updates and Options tabs, English), the CLI (describe, diagnostics), a real MCP session with two local GGUF turns, GGUF LoRA load and live rescale on CUDA, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures including the licence notices, the release archive build and its verification, and the pytest suite. Not re-run with this SDK version: Codex, Claude Code, Antigravity, Ollama and the French window. OpenCode, the paid HTTP APIs and a real GitHub release remain not executed."
+    },
+    {
+      "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+      "device": "NVIDIA GeForce RTX 3090 24 GB",
+      "driver": "610.47",
+      "runtime": "Python 3.11.5, cytools-core 0.10.1; speech: stt torch 2.8.0+cpu transformers 5.18.0, tts torch 2.8.0+cu128 transformers 4.57.3 coqui-tts 0.27.5 f5-tts 1.1.22",
+      "date": "2026-10-06",
+      "status": "Application 0.2.0, speech: both speech environments installed by the Tool's operation, the five speech models and the vocoder installed with their digests, transcription with Parakeet TDT 0.6B v3 (French) and Phonon-2 (English) on the CPU, reading aloud with XTTS-v2 (studio voices and a cloned clip, French and English) and F5-TTS (French and English) on CUDA, checked by transcribing the audio back, the Speech and Chat tabs of the window through the real launcher, and the pytest suite. Not executed: microphone recording and loudspeaker playback with a person speaking and listening, and the voice environment on the CPU."
     }
   ]
 }

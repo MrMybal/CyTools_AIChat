@@ -51,7 +51,8 @@ def source_licence_accepted(source_root, identifier):
 def survey(source_root, wanted=()):
     rows = []
     for identifier, info in catalog.kinds().items():
-        if wanted and identifier not in wanted:
+        # Single-file GGUF weights only: a speech model is a folder of several files.
+        if info['kind'] not in ('model', 'lora') or (wanted and identifier not in wanted):
             continue
         item = info['files'][0]
         found = source_file(source_root, identifier, item['name'], info['kind'])

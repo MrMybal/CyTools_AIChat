@@ -31,6 +31,26 @@ HEALTH_TIMEOUT = 300.0
 STOP_GRACE = 6.0
 
 
+def attach_job_object(pid):
+    """Tie a child process to a job object that kills it when the Tool goes away (Windows)."""
+    try:
+        import win32api
+        import win32con
+        import win32job
+    except ImportError:  # pragma: no cover - pywin32 is declared in requirements.txt
+        return None
+    job = win32job.CreateJobObject(None, '')
+    limits = win32job.QueryInformationJobObject(job, win32job.JobObjectExtendedLimitInformation)
+    limits['BasicLimitInformation']['LimitFlags'] = win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+    win32job.SetInformationJobObject(job, win32job.JobObjectExtendedLimitInformation, limits)
+    handle = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, pid)
+    try:
+        win32job.AssignProcessToJobObject(job, handle)
+    finally:
+        handle.Close()
+    return job
+
+
 class Resident:
     worker_id = 'llamacpp-server'
 
@@ -235,23 +255,7 @@ class Resident:
                           % int(HEALTH_TIMEOUT))
 
     def _attach_job_object(self):
-        try:
-            import win32api
-            import win32con
-            import win32job
-        except ImportError:  # pragma: no cover - pywin32 is declared in requirements.txt
-            return
-        self.job_handle = win32job.CreateJobObject(None, '')
-        limits = win32job.QueryInformationJobObject(self.job_handle,
-                                                    win32job.JobObjectExtendedLimitInformation)
-        limits['BasicLimitInformation']['LimitFlags'] = win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-        win32job.SetInformationJobObject(self.job_handle,
-                                         win32job.JobObjectExtendedLimitInformation, limits)
-        handle = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, self.process.pid)
-        try:
-            win32job.AssignProcessToJobObject(self.job_handle, handle)
-        finally:
-            handle.Close()
+        self.job_handle = attach_job_object(self.process.pid)
 
     # ------------------------------------------------------------------ adapters
 

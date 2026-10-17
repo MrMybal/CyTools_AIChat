@@ -1,0 +1,7 @@
+# Speech-to-text environment (runtime/engines/stt), separate from the window's runtime.
+# PyTorch (CPU) is installed first and pinned by a constraints file: see app/speech-engines.json.
+# Phonon-2 and Parakeet TDT 0.6B v3 load as ParakeetForTDT, which needs transformers 5.
+transformers==5.18.0
+librosa==0.11.0
+soundfile==0.13.1
+zstandard==0.25.0

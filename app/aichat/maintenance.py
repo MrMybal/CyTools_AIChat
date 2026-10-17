@@ -56,7 +56,7 @@ def state_file():
 ENGINE_REPOSITORY = 'ggml-org/llama.cpp'
 MAX_ASSET_BYTES = 768 * 1024 ** 2
 # Bumped whenever the application stops being loadable by the runtime already installed here.
-RUNTIME_ABI = 'python311-cytools010-imgui192-aichat02'
+RUNTIME_ABI = 'python311-cytools010-imgui192-aichat03'
 USER_AGENT = 'CyTools-AIChat'
 # Files beside app/ that belong to the delivered product and travel with a release: the
 # licence of the Tool and the notices of the components it includes. They are deployed and
@@ -345,8 +345,11 @@ def restore_root_items(state):
 
 
 def busy(runtime):
+    # Every job not yet finished counts: one that is Preparing or WaitingForResources is about
+    # to run code from the very app/ an update would replace.
     return [job for job in runtime._jobs.values()
-            if job['state'] in ('Queued', 'Running')] if runtime is not None else []
+            if job['state'] not in ('Completed', 'Failed', 'Cancelled')] \
+        if runtime is not None else []
 
 
 def apply(context, runtime, stream='application'):

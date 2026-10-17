@@ -92,6 +92,42 @@ $env:CYTOOLS_TOKEN = '<the token it printed>'
 
 That identity is then used as-is, and an operation it lacks the permission for is refused.
 
+## Speech
+
+Speech to text and text to speech run in two private environments declared in
+`speech-engines.json` and created by `aichat/speech_env.py` (the `speech_engine_install`
+operation): `runtime/engines/stt` (PyTorch CPU, transformers 5, for `ParakeetForTDT`) and
+`runtime/engines/tts` (PyTorch CUDA 12.8, transformers 4.57, coqui-tts, f5-tts). They are
+separate because XTTS-v2 relies on transformers 4 internals that version 5 removed, while the
+Parakeet TDT models need version 5. f5-tts is installed without its declared dependencies:
+its web demo needs a gradio whose huggingface-hub conflicts with transformers 4.57; what its
+inference imports is listed in `requirements-speech-tts.txt`, and the installer refuses an
+environment until every declared module and the check import pass.
+
+`aichat/speech.py` keeps one worker per environment (`aichat/speech_worker.py`, JSON lines on
+stdin and stdout), started on first use, attached to a job object, offline, without the Tool's
+token or any provider key in its environment. The worker reserves the budget of the model it
+holds and keeps it loaded. Speech models are entries of `speech-catalog.json` (kinds `stt` and
+`tts`), installed by the same `model_install` path as the chat weights. `aichat/voices.py`
+holds the voice library (`data/voices`) and the speech settings (`data/settings/speech.json`).
+
+Live dictation: the window appends the microphone to `data/inputs/dictation/live-<id>.pcm`
+and starts `transcribe_live`, which reads it every 0.15 s, closes a sentence at a pause of
+0.6 s (or at its quietest point after 20 s), transcribes a closed sentence once and the open
+one again whenever half a second of new audio has arrived, and publishes `DictationPartial`
+events that the window writes into the message box. `<name>.done` ends the job, which returns
+the whole text and deletes the live file.
+
+Progressive reading: `speak` with `progressive` writes each sentence to `data/speech/pieces`
+and publishes a `SpeechPiece` event; the window queues it on one output stream and deletes
+the file. The first piece is held to about 110 characters so the voice starts quickly.
+Cancelling writes a cancel file the worker checks between sentences, so the model stays
+loaded.
+
+Operations: `transcribe`, `transcribe_live`, `speak` (a text, or a stored message of a conversation, cached in
+`data/speech`), `voice_list`, `voice_add`, `voice_delete`, `speech_settings`, `speech_status`,
+`speech_engine_install`, `speech_engine_remove`, `speech_unload`.
+
 ## Adding a provider
 
 1. Subclass `Provider` in `aichat/providers/`. Set `kind` to `STATELESS` (the Tool sends the
@@ -104,6 +140,14 @@ That identity is then used as-is, and an operation it lacks the permission for i
 
 `chat` receives a `ChatRequest` and an `on_delta(kind, text)` callback. Call
 `request.check()` in the read loop: that is what makes cancellation work.
+
+## Look and feel
+
+The window is drawn with CyUI: `app/cyui.py` is an unchanged copy of the library's Python
+port (MIT, see `LICENCES/SOURCES.txt`). Colours come from `cyui.palette()` roles, sizes from
+`cyui.dp()`; the theme and the density are chosen in **Options** and applied by
+`ui_common.apply_style()`. Replace the file with a newer copy of the library rather than
+editing it here.
 
 ## Interface strings
 

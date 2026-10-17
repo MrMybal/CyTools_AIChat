@@ -49,7 +49,8 @@ ROOT_ITEMS = ('LICENSE', 'LICENCES')
 # What every release must hold. The notices are checked in the archive itself: their
 # presence in the repository proves nothing about the package a user receives.
 REQUIRED = ('app/CyTool.json', 'app/release.json', 'app/LICENSE-CyToolsCore.txt', 'LICENSE',
-            'LICENCES/SOURCES.txt', 'LICENCES/CyToolsCore-MIT.txt')
+            'LICENCES/SOURCES.txt', 'LICENCES/CyToolsCore-MIT.txt', 'LICENCES/CyUI-MIT.txt',
+            'app/cyui.py')
 
 
 def included(path):

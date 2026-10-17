@@ -6,21 +6,24 @@ an update and through a rollback.
 
 No repository is invented. If no application repository is configured, the panel says so and
 offers to configure one rather than pretending an update source exists.
+
+Drawn with CyUI: a property table for the sources, a card per stream, callouts for states.
 """
 import webbrowser
 
 from imgui_bundle import ImVec2
 
+import cyui
 from cytools_core import CyToolError
-from ui_common import imgui, label, tr
+from ui_common import imgui, tr
 
 from aichat import maintenance
-from .widgets import Async, wrapped
+from .state import active
+from .widgets import Async
 
 _state = Async()
 _check = None
 _jobs = {}
-_message = ''
 _form = {}
 
 
@@ -30,7 +33,6 @@ def refresh(force=False):
 
 
 def poll(interface):
-    global _message
     finished = []
     for key, job in list(_jobs.items()):
         try:
@@ -39,17 +41,18 @@ def poll(interface):
             finished.append(key)
             continue
         _jobs[key] = current
-        if current['state'] not in ('Queued', 'Running'):
+        if not active(current):
             finished.append(key)
             if current['state'] == 'Failed' and current.get('error'):
-                _message = '%s: %s' % (current['error'].get('code', 'Error'),
-                                       current['error'].get('message', ''))
+                cyui.notify('%s: %s' % (current['error'].get('code', 'Error'),
+                                        current['error'].get('message', '')), 'error', 8.0)
             elif current['state'] == 'Completed':
                 outputs = current.get('outputs') or {}
                 if outputs.get('restartRequired'):
-                    _message = tr('Done. Close and reopen the application to run the new version.')
+                    cyui.notify(tr('Done. Close and reopen the application to run the new version.'),
+                                'success', 10.0)
                 else:
-                    _message = tr('Finished: ') + key
+                    cyui.notify(tr('Finished: ') + key, 'success')
     for key in finished:
         _jobs.pop(key, None)
     if finished:
@@ -57,139 +60,151 @@ def poll(interface):
 
 
 def start(interface, key, operation, parameters):
-    global _message
     try:
         _jobs[key] = interface.submit(operation, parameters)
-        _message = ''
     except (CyToolError, ValueError) as exc:
-        _message = str(exc)
+        cyui.notify(str(exc), 'error', 8.0)
 
 
 def draw(interface):
-    global _message
     refresh()
     poll(interface)
     state = _state.take({}) or {}
     settings = state.get('settings', {})
-    if _message:
-        imgui.text_colored((0.75, 0.85, 0.95, 1.0), _message)
-        imgui.same_line()
-        if imgui.small_button(label('Dismiss###dismiss-updates')):
-            _message = ''
-    imgui.text('%s %s' % (tr('Installed application version:'), state.get('current', '?')))
-    imgui.text_disabled(tr('Data is never part of an update: ') + str(state.get('dataUntouched', '')))
-    imgui.separator()
-    draw_sources(interface, settings)
-    imgui.separator()
-    draw_check(interface)
-    imgui.separator()
-    draw_application(interface, state)
-    imgui.separator()
-    draw_weights()
+    cyui.panel_header(tr('Updates'), tr('Data is never part of an update: ')
+                      + str(state.get('dataUntouched', '')))
+    imgui.same_line()
+    badge = '%s %s' % (tr('Version').upper(), state.get('current', '?'))
+    cyui.align_right(imgui.calc_text_size(badge).x + cyui.dp(12))
+    cyui.badge(badge, 'accent')
+    cyui.divider()
+    if not imgui.begin_child('##updates-page', ImVec2(0, 0)):
+        imgui.end_child()
+        return
+    if cyui.begin_section(tr('Update sources') + '###sources'):
+        draw_sources(interface, settings)
+        cyui.end_section()
+    if cyui.begin_section(tr('Check') + '###check'):
+        draw_check()
+        cyui.end_section()
+    if cyui.begin_section(tr('Application') + '###application'):
+        draw_application(interface, state)
+        cyui.end_section()
+    if cyui.begin_section(tr('Model weights') + '###weights'):
+        draw_weights()
+        cyui.end_section()
+    imgui.end_child()
 
 
 def draw_sources(interface, settings):
-    imgui.separator_text(label('Update sources'))
     application = _form.setdefault('application', settings.get('applicationRepository', ''))
     engine_repository = _form.setdefault('engine', settings.get('engineRepository', ''))
-    imgui.set_next_item_width(380)
-    changed, value = imgui.input_text(label('Application repository (owner/name)'), application)
-    if changed:
-        _form['application'] = value
     if not settings.get('applicationRepository'):
-        imgui.same_line()
-        imgui.text_colored((0.9, 0.7, 0.4, 1.0), tr('not configured'))
-    imgui.set_next_item_width(380)
-    changed, value = imgui.input_text(label('Engine repository (owner/name)'), engine_repository)
-    if changed:
-        _form['engine'] = value
-    automatic = _form.setdefault('automatic', bool(settings.get('automaticCheck')))
-    changed, automatic = imgui.checkbox(label('Check for updates when the application starts'),
-                                        automatic)
-    if changed:
-        _form['automatic'] = automatic
-    if imgui.button(label('Save the sources')):
+        cyui.callout('warning', tr('This Tool does not guess a repository to download code from. '
+                                      'Until an application repository is configured, that stream '
+                                      'stays unavailable.'))
+        cyui.space(4)
+    if cyui.begin_properties('##sources'):
+        cyui.property(tr('Application repository'), tr('owner/name on GitHub'))
+        changed, value = imgui.input_text_with_hint('##application-repository', 'owner/name',
+                                                    application)
+        if changed:
+            _form['application'] = value
+        cyui.property(tr('Engine repository'), tr('Only consulted to report what exists upstream: '
+                                                      'the engine is installed from the build pinned '
+                                                      'in app/engine-assets.json, with its published '
+                                                      'size and digest checked first.'))
+        changed, value = imgui.input_text_with_hint('##engine-repository', 'owner/name',
+                                                    engine_repository)
+        if changed:
+            _form['engine'] = value
+        cyui.property(tr('Check when the application starts'))
+        automatic = _form.setdefault('automatic', bool(settings.get('automaticCheck')))
+        changed, automatic = cyui.toggle_switch('##automatic', automatic)
+        if changed:
+            _form['automatic'] = automatic
+        cyui.end_properties()
+    if cyui.icon_text_button(cyui.icon.save, tr('Save the sources') + '###save-sources'):
         start(interface, 'settings', 'update_settings',
               {'application_repository': _form['application'].strip(),
                'engine_repository': _form['engine'].strip(),
                'automatic_check': 'on' if _form['automatic'] else 'off'})
-    wrapped(tr('This Tool does not guess a repository to download code from. Until an '
-               'application repository is configured, that stream stays unavailable. The engine '
-               'repository is only consulted to report what exists upstream: the engine is '
-               'installed from the build pinned in app/engine-assets.json, with its published '
-               'size and digest checked first.'))
 
 
-def draw_check(interface):
+def draw_check():
     global _check
-    imgui.separator_text(label('Check'))
     if _check is None:
         _check = Async()
-    if imgui.button(label('Check now')):
-        _check.start(lambda: maintenance.check('all'), 'check')
-    imgui.same_line()
+    with cyui.scoped_disabled(_check.running):
+        if cyui.icon_text_button(cyui.icon.sync, tr('Check now') + '###check-now', 'primary'):
+            _check.start(lambda: maintenance.check('all'), 'check')
     if _check.running:
-        imgui.text_disabled(tr('Asking GitHub...'))
+        imgui.same_line()
+        cyui.spinner('##checking', 6)
+        imgui.same_line()
+        cyui.text_faint(tr('Asking GitHub...'))
     if _check.error:
-        imgui.text_colored((0.9, 0.5, 0.45, 1.0), _check.error)
-    for row in (_check.take([]) or []):
-        imgui.push_id('stream-' + row['stream'])
-        imgui.text('%s: %s -> %s' % (tr(row['stream']), row.get('installed', ''),
-                                          row.get('available') or tr('unknown')))
-        if row.get('updateAvailable'):
-            imgui.same_line()
-            imgui.text_colored((0.6, 0.85, 0.65, 1.0), tr('update available'))
-        if row.get('notes'):
-            wrapped(tr(row['notes']))
-        imgui.pop_id()
+        cyui.callout('error', _check.error)
+    rows = _check.take([]) or []
+    if rows and cyui.begin_properties('##streams'):
+        for row in rows:
+            imgui.push_id('stream-' + row['stream'])
+            cyui.property(tr(row['stream']), tr(row['notes']) if row.get('notes') else None)
+            imgui.text('%s  ->  %s' % (row.get('installed', '') or '-',
+                                       row.get('available') or tr('unknown')))
+            if row.get('updateAvailable'):
+                imgui.same_line()
+                cyui.badge(tr('UPDATE AVAILABLE').upper(), 'success')
+            imgui.pop_id()
+        cyui.end_properties()
 
 
 def draw_application(interface, state):
-    imgui.separator_text(label('Application'))
     staged = state.get('staged') or {}
     job = _jobs.get('download') or _jobs.get('apply') or _jobs.get('rollback')
-    if job and job.get('state') in ('Queued', 'Running'):
+    if active(job):
         progress = job.get('progress') or {}
-        imgui.progress_bar(min(1.0, float(progress.get('percent', 0)) / 100.0), ImVec2(-1, 0),
-                           '%s  %s' % (job['state'], progress.get('currentStep', '')))
-        if imgui.small_button(label('Cancel###cancel-update')):
+        percent = progress.get('percent')
+        room = imgui.get_frame_height() + cyui.dp(2) + imgui.get_style().item_spacing.x
+        cyui.progress_bar(min(1.0, float(percent) / 100.0) if percent else -1.0,
+                          (imgui.get_content_region_avail().x - room, imgui.get_frame_height()),
+                          '%s  %s' % (tr(job['state']), tr(progress.get('currentStep', ''))))
+        imgui.same_line()
+        if cyui.icon_button(cyui.icon.close, tr('Cancel')):
             try:
                 interface.runtime.cancel(interface.actor, job['jobId'])
             except CyToolError:
                 pass
         return
-    if imgui.button(label('Download and verify')):
+    if staged.get('version'):
+        cyui.callout('success', '%s %s (%s)' % (tr('Staged and verified:'), staged['version'],
+                                                   staged.get('asset', '')))
+    else:
+        cyui.text_faint(tr('Nothing is staged. A download is verified in runtime/updates before it '
+                           'can be applied.'))
+    cyui.space(2)
+    if cyui.icon_text_button(cyui.icon.download, tr('Download and verify') + '###download-update'):
         start(interface, 'download', 'update_download', {'stream': 'application'})
     imgui.same_line()
-    imgui.begin_disabled(not staged.get('version'))
-    if imgui.button(label('Apply the staged update')):
-        start(interface, 'apply', 'update_apply', {'stream': 'application'})
-    imgui.end_disabled()
+    with cyui.scoped_disabled(not staged.get('version')):
+        if cyui.icon_text_button(cyui.icon.check, tr('Apply the staged update') + '###apply-update',
+                                 'primary' if staged.get('version') else 'secondary'):
+            start(interface, 'apply', 'update_apply', {'stream': 'application'})
     imgui.same_line()
-    imgui.begin_disabled(not (state.get('lastApplied') or {}).get('backup'))
-    if imgui.button(label('Roll back')):
-        start(interface, 'rollback', 'update_rollback', {'stream': 'application'})
-    imgui.end_disabled()
-    if staged.get('version'):
-        imgui.text_colored((0.6, 0.85, 0.65, 1.0),
-                           '%s %s (%s)' % (tr('Staged and verified:'), staged['version'],
-                                           staged.get('asset', '')))
-    else:
-        imgui.text_disabled(tr('Nothing is staged. A download is verified in runtime/updates '
-                               'before it can be applied.'))
     applied = state.get('lastApplied') or {}
+    with cyui.scoped_disabled(not applied.get('backup')):
+        if cyui.icon_text_button(cyui.icon.undo, tr('Roll back') + '###rollback'):
+            start(interface, 'rollback', 'update_rollback', {'stream': 'application'})
     if applied.get('backup'):
-        imgui.text_disabled('%s %s · %s' % (tr('Kept previous version:'),
-                                                 applied.get('previousVersion', ''),
-                                                 applied['backup']))
+        cyui.text_faint('%s %s  ·  %s' % (tr('Kept previous version:'),
+                                          applied.get('previousVersion', ''), applied['backup']))
     if state.get('backups'):
-        imgui.text_disabled(tr('Backups: ') + ', '.join(state['backups'][-4:]))
+        cyui.text_faint(tr('Backups: ') + ', '.join(state['backups'][-4:]))
 
 
 def draw_weights():
-    imgui.separator_text(label('Model weights'))
-    wrapped(tr('Weights are a separate stream with their own catalogue, revisions and licences. '
-               'They are managed in the Models tab and are never replaced by an application or '
-               'engine update.'))
-    if imgui.small_button(label('Open the llama.cpp releases')):
+    cyui.text_faint(tr('Weights are a separate stream with their own catalogue, revisions and '
+                       'licences. They are managed in the Models tab and are never replaced by an '
+                       'application or engine update.'))
+    if cyui.link_text(tr('Open the llama.cpp releases') + '###llama-releases'):
         webbrowser.open('https://github.com/ggml-org/llama.cpp/releases')

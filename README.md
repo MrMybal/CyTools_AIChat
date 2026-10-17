@@ -9,6 +9,7 @@ runtime, built on the [CyToolsCore](https://github.com/MrMybal/CyToolsCore) SDK.
 conversations stay open in tabs and are kept on disk, with the models you already have access
 to — the Codex, Claude Code and Antigravity command lines, any OpenAI-compatible endpoint,
 Ollama — and with local GGUF models run by the Tool's own llama.cpp server, with LoRA adapters.
+Messages can be dictated and replies read aloud, in French as well as in English.
 French user guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README.md).
 
 Maintenance: **Cyberalien**.
@@ -16,6 +17,7 @@ Maintenance: **Cyberalien**.
 ## What it does
 
 - **Conversations in tabs**, each one a readable JSON document in `data/conversations/`.
+  Message text can be selected with the mouse and copied (Ctrl+C), or copied whole.
   Closing a tab deletes nothing; deleting a conversation moves it to a backup folder. Open
   tabs are restored at the next start. Export to Markdown or JSON.
 - **Two provider families, told apart in the interface and in every stored message.** A
@@ -31,6 +33,15 @@ Maintenance: **Cyberalien**.
   server, a reasoning-effort setting for thinking models, and the model kept resident between
   turns. Weights already downloaded by another CyTool can be copied in with
   `app/scripts/import_models.py`.
+- **Speech, both ways, on your machine.** *Dictate* records the microphone and writes the
+  words into the message box while you speak, about half a second behind you; the sentence
+  being spoken may still change until the next pause. Nothing is sent by itself: Parakeet TDT 0.6B v3 for French and
+  24 other languages, or Phonon-2 for English, on the CPU. *Read aloud* speaks a reply, Markdown reduced to
+  its words, starting with the first sentence while the rest is still being made (about
+  1.5 s once the voice is loaded), and replies can be read as they arrive: XTTS-v2 (17 languages, 58 studio voices, or a clip)
+  and F5-TTS (an English and a French model), on the GPU. A voice can be recorded or
+  imported in the Speech tab; its words are found by speech to text. XTTS-v2 and F5-TTS are
+  licensed for non-commercial use only.
 - **Streaming, cancellation, presets**: tokens stream into the tab, a turn can be cancelled
   mid-reply and keeps what was already received, and system prompts with sampling values are
   saved as reusable presets.
@@ -39,7 +50,8 @@ Maintenance: **Cyberalien**.
   when present.
 - **Updates in three separate streams** (application, engine, weights), staged under
   `runtime/updates`, verified before activation, with a rollback; `data/` is never replaced.
-- Interface in English by default and fully in French from **Options**.
+- Interface in English by default and fully in French from **Options**, drawn with
+  [CyUI](LICENCES/SOURCES.txt) (five themes, compact or comfortable density).
 
 The [capability matrix](app/Docs/CapabilityCoverage.md) separates what was executed on the
 author's machine from what is only wired: the Codex, Claude Code, Antigravity, Ollama and
@@ -76,6 +88,9 @@ Then double-click `CyTools_AIChat.exe`, or run `.\runtime\python\Scripts\pythonw
 2. **Models** tab, for local models: install the llama.cpp engine (CUDA if you have an NVIDIA
    card, otherwise CPU), accept a model's licence on its page, download it.
 3. **Chat** tab: pick a provider and a model in the tab header, write, send.
+4. **Speech** tab, for dictation and reading aloud: install the two speech environments
+   (about 1.6 GB and 7.5 GB, created by pip under `runtime/engines`), then accept the
+   licence of a speech-to-text model and of a voice model and download them.
 
 ## Command line and MCP
 
@@ -84,6 +99,8 @@ Then double-click `CyTools_AIChat.exe`, or run `.\runtime\python\Scripts\pythonw
 .\runtime\python\Scripts\python.exe app\tool.py invoke chat --params-file app\params.json
 .\runtime\python\Scripts\python.exe app\tool.py invoke list_providers --params "{}"
 .\runtime\python\Scripts\python.exe app\tool.py mcp          # MCP stdio server
+.\runtime\python\Scripts\python.exe app\tool.py invoke transcribe --params "{\"audio\": \"C:/rec.wav\"}"
+.\runtime\python\Scripts\python.exe app\tool.py invoke speak --params "{\"text\": \"Bonjour !\"}"
 ```
 
 The conversation an AI client creates over MCP is the same document the window opens: both
@@ -98,8 +115,8 @@ LISEZ-MOI.md            user guide (French)
 LICENSE                 licence of the Tool's own code (GPL-3.0-only)
 LICENCES/               licence texts and source links of the included components
 app/                    code, manifest (CyTool.json), interface, providers, tests, scripts, docs
-data/                   conversations, presets, models, jobs, logs, exports, reports (not in git)
-runtime/                private Python, llama.cpp engines, downloads, staged updates (not in git)
+data/                   conversations, presets, models, voices, speech, jobs, logs (not in git)
+runtime/                private Python, llama.cpp engines, speech environments (not in git)
 ```
 
 Tests (fixtures only, no model loaded): `.\runtime\python\Scripts\python.exe -m pip install -r app\requirements-dev.txt`,
@@ -116,8 +133,8 @@ It is built on the CyToolsCore SDK 0.10.1, which is under the **MIT** licence. T
 text and the source links of every included component are in [LICENCES/](LICENCES): they
 ship with the product, in the release archive as well as in this repository.
 
-The llama.cpp engine, the agent command lines and every model weight are not part of the
-product: they are installed or downloaded on your machine under their own licences, listed
+The llama.cpp engine, the speech environments, the agent command lines and every model
+weight, speech models included, are not part of the product: they are installed or downloaded on your machine under their own licences, listed
 in [app/licenses.json](app/licenses.json), in the model catalogue and in the Options tab.
 The Models tab asks for your acceptance before downloading.
 

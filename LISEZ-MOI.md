@@ -23,7 +23,8 @@ modèles, opérations avancées, options) :
 - **Mises à jour** — application, moteur et poids, trois flux séparés.
 
 L'interface est en anglais par défaut. **Options → Language → Français** la bascule sans
-redémarrer, et le choix est conservé.
+redémarrer, et le choix est conservé. Le thème (cinq au choix) et la densité (compacte ou
+confortable) se règlent au même endroit.
 
 ## Choisir un fournisseur
 
@@ -70,7 +71,33 @@ sur la machine par l'onglet *Modèles / calcul*. Il apparaît ensuite dans *Invi
 réglages* de la conversation, avec un curseur d'intensité. Changer l'intensité agit
 immédiatement ; changer la liste des adaptateurs chargés redémarre le serveur local.
 
+## Dicter et écouter
+
+L'onglet **Voix** installe deux environnements (environ 1,6 Go et 7,5 Go, créés sous
+`runtime/engines`), puis les modèles, après acceptation de leur licence :
+
+- **Dictée** : *Dicter*, dans la zone de saisie, enregistre le micro et les mots s'écrivent
+  pendant que vous parlez, avec environ une demi-seconde de retard ; la phrase en cours peut
+  encore se corriger jusqu'à la pause suivante. Le message n'est envoyé que lorsque vous
+  appuyez sur *Envoyer*. La première dictée d'une session met quelques secondes à démarrer, le
+  temps de charger le modèle. Parakeet TDT 0.6B v3
+  comprend le français (et 24 autres langues) ; Phonon-2, beaucoup plus léger, est fait pour
+  l'anglais. La dictée tourne sur le processeur : environ 1 seconde pour 20 secondes de parole.
+- **Lecture** : *Lire à voix haute* sur une réponse, ou la case *Lire les réponses* pour les
+  entendre au fil de l'eau. La lecture commence dès que la première phrase est prête (environ
+  1,5 s une fois la voix chargée) pendant que la suite se fabrique ; *Arrêter* coupe le son
+  aussitôt. Le Markdown (code, liens, mise en forme) n'est pas lu. XTTS-v2 parle français et propose 58 voix de studio ; F5-TTS
+  existe en version française et anglaise et imite toujours un extrait de voix.
+- **Voix** : enregistrez ou importez un extrait de 6 à 12 secondes ; les mots prononcés sont
+  retrouvés par la dictée. La langue est devinée d'après le texte, ou fixée dans les réglages.
+
+XTTS-v2 et F5-TTS ne sont autorisés que pour un usage non commercial, y compris pour l'audio
+qu'ils produisent.
+
 ## Vos conversations
+
+Le texte des messages se sélectionne à la souris et se copie avec Ctrl+C ; *Copier* copie un
+message entier.
 
 Elles sont dans `data/conversations/`, un fichier JSON lisible par conversation. Fermer un
 onglet ne supprime rien. Supprimer une conversation la déplace dans

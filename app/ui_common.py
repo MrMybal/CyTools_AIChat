@@ -18,7 +18,17 @@ ROOT = APP.parent
 from standalone_log import install as install_standalone_log
 journal = install_standalone_log(ROOT)
 PREFERENCES = ROOT / 'data/settings/ui-preferences.json'
-DEFAULTS = {'language': 'en', 'theme': 'dark', 'font_scale': 1.0, 'autosave_generation': False}
+try:
+    import cyui
+except ImportError:   # a Tool without the CyUI port keeps ImGui's stock themes
+    cyui = None
+# With CyUI, the themes are its five palettes; ImGui's stock ones otherwise. Values saved by
+# an earlier version (dark, light, classic) map to the nearest CyUI theme.
+THEMES = tuple(theme[0] for theme in cyui.THEMES) if cyui else ('dark', 'light', 'classic')
+LEGACY_THEMES = {'dark': 'mid-grey', 'light': 'light-grey', 'classic': 'mid-grey'}
+DENSITIES = ('compact', 'comfortable')
+DEFAULTS = {'language': 'en', 'theme': THEMES[0], 'density': 'comfortable', 'font_scale': 1.0,
+            'autosave_generation': False}
 
 def read(path, default):
     try: return json.loads(path.read_text(encoding='utf-8-sig'))
@@ -30,7 +40,9 @@ class Preferences:
         stored = read(self.path, {})
         self.values = {**DEFAULTS, **(stored if isinstance(stored, dict) else {})}
         if self.values['language'] not in ('en', 'fr'): self.values['language'] = 'en'
-        if self.values['theme'] not in ('dark', 'light', 'classic'): self.values['theme'] = 'dark'
+        if cyui and self.values['theme'] in LEGACY_THEMES: self.values['theme'] = LEGACY_THEMES[self.values['theme']]
+        if self.values['theme'] not in THEMES: self.values['theme'] = THEMES[0]
+        if self.values.get('density') not in DENSITIES: self.values['density'] = 'comfortable'
         if not isinstance(self.values.get('autosave_generation'),bool): self.values['autosave_generation']=False
         try: self.values['font_scale'] = min(1.6, max(.8, float(self.values['font_scale'])))
         except (TypeError, ValueError): self.values['font_scale'] = 1.0
@@ -45,6 +57,10 @@ catalog = read(APP/'locales/ui.json', {})
 def normalized(text):
     return ''.join(c for c in unicodedata.normalize('NFKD',text) if not unicodedata.combining(c)).replace('’',"'").casefold()
 _normalized = {normalized(k):v for k,v in catalog.items()}
+# Every translated value: a panel that hands an already translated text to the facade gets it
+# back unchanged instead of having it folded to an unaccented key and translated again.
+_translated = {value for entry in catalog.values() if isinstance(entry, dict)
+               for language, value in entry.items() if language != 'en' and isinstance(value, str)}
 _prefixes = sorted((k for k in catalog if len(k)>=8 and k.endswith((' ',': '))),key=len,reverse=True)
 _raw = None
 _tab_depth = 0
@@ -269,7 +285,9 @@ def raw():
 def tr(text):
     if not isinstance(text, str) or not text: return text
     language = preferences.values['language']
-    translation = catalog.get(text) or _normalized.get(normalized(text))
+    translation = catalog.get(text)
+    if translation is None and text in _translated: return text
+    translation = translation or _normalized.get(normalized(text))
     if translation: return translation.get(language, translation.get('en', text))
     # Only registered display fragments are substituted. No remote translator,
     # model inference, token access or modification of user-entered text.
@@ -353,8 +371,16 @@ imgui = ImGuiFacade()
 
 def apply_style():
     native = raw()
-    {'dark': native.style_colors_dark, 'light': native.style_colors_light,
-     'classic': native.style_colors_classic}[preferences.values['theme']]()
+    if cyui:
+        try:
+            from imgui_bundle import hello_imgui
+            scale = hello_imgui.dpi_window_size_factor() or 1.0
+        except Exception:
+            scale = 1.0
+        cyui.apply(preferences.values['theme'], preferences.values['density'], scale)
+    else:
+        {'dark': native.style_colors_dark, 'light': native.style_colors_light,
+         'classic': native.style_colors_classic}[preferences.values['theme']]()
     style = native.get_style()
     if hasattr(style, 'font_scale_main'): style.font_scale_main = preferences.values['font_scale']
     else: native.get_io().font_global_scale = preferences.values['font_scale']
@@ -393,8 +419,16 @@ def options_panel():
     native.text(tr('Interface preferences'))
     changed,index=native.combo(label('Language'),('en','fr').index(preferences.values['language']),['English','Français'])
     if changed: preferences.values['language']=('en','fr')[index]; preferences.save()
-    changed,index=native.combo(label('Theme'),('dark','light','classic').index(preferences.values['theme']),[tr('Dark'),tr('Light'),tr('Classic')])
-    if changed: preferences.values['theme']=('dark','light','classic')[index]; preferences.save(); apply_style()
+    if cyui:
+        names=[theme[1] for theme in cyui.THEMES]
+        changed,index=native.combo(label('Theme'),THEMES.index(preferences.values['theme']),names)
+        if changed: preferences.values['theme']=THEMES[index]; preferences.save(); apply_style()
+        changed,index=cyui.segmented('##density',[tr('Compact'),tr('Comfortable')],DENSITIES.index(preferences.values['density']))
+        native.same_line(); native.text(tr('Density'))
+        if changed: preferences.values['density']=DENSITIES[index]; preferences.save(); apply_style()
+    else:
+        changed,index=native.combo(label('Theme'),('dark','light','classic').index(preferences.values['theme']),[tr('Dark'),tr('Light'),tr('Classic')])
+        if changed: preferences.values['theme']=('dark','light','classic')[index]; preferences.save(); apply_style()
     changed,scale=native.slider_float(label('Text size'),preferences.values['font_scale'],.8,1.6,'%.2fx')
     if changed: preferences.values['font_scale']=scale; preferences.save(); apply_style()
     if native.button(label('Reset interface preferences')):
@@ -488,6 +522,7 @@ def run(runner):
             if 'seed' in form_state(): form_state()['seed']=123456789
             load_current(path)
             assert form_state()==original_form,'Configuration load did not restore the current form'
+        if cyui: cyui.render_notifications()
         if '--ui-test-options' in sys.argv and frames>15: runner.app_shall_exit=True
         if journal.test:runner.app_shall_exit=journal.frames>=8
         if _advanced_panel.test:runner.app_shall_exit=_advanced_panel.frames>=8
@@ -496,6 +531,10 @@ def run(runner):
             if _mesh_panel.test: runner.app_shall_exit=False
             _mesh_panel.check_test(runner)
     runner.callbacks.show_gui=draw
+    if cyui:
+        # CyUI's fonts (Segoe UI, Semibold, Consolas, MDL2 icons) replace hello_imgui's default
+        # font, which is looked up in the assets folder and is missing when a Tool sets its own.
+        runner.callbacks.load_additional_fonts=lambda: cyui.load_fonts(size=16.0 if preferences.values['density']=='comfortable' else 14.0)
     try: hello_imgui.run(runner)
     except Exception:
         import traceback
