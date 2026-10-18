@@ -483,6 +483,10 @@
     "en": " | utilization ",
     "fr": " | occupation "
   },
+  "%d conversations moved to data/conversations/deleted.": {
+    "en": "%d conversations moved to data/conversations/deleted.",
+    "fr": "%d conversations déplacées dans data/conversations/deleted."
+  },
   "%d person(s) | %s": {
     "en": "%d person(s) | %s",
     "fr": "%d personne(s) | %s"
@@ -1747,6 +1751,10 @@
     "en": "Cancel maintenance",
     "fr": "Annuler la maintenance"
   },
+  "Cancel the selection": {
+    "en": "Cancel the selection",
+    "fr": "Annuler la sélection"
+  },
   "Cancel##": {
     "en": "Cancel##",
     "fr": "Annuler##"
@@ -2454,6 +2462,14 @@
   "Delete": {
     "en": "Delete",
     "fr": "Supprimer"
+  },
+  "Delete %d conversations?": {
+    "en": "Delete %d conversations?",
+    "fr": "Supprimer %d conversations ?"
+  },
+  "Delete this conversation": {
+    "en": "Delete this conversation",
+    "fr": "Supprimer cette conversation"
   },
   "Delete this conversation?": {
     "en": "Delete this conversation?",
@@ -7283,6 +7299,18 @@
     "en": "Select a source image to calculate resolution.",
     "fr": "Choisir une image source pour calculer la résolution."
   },
+  "Select all": {
+    "en": "Select all",
+    "fr": "Tout sélectionner"
+  },
+  "Select conversations to delete": {
+    "en": "Select conversations to delete",
+    "fr": "Sélectionner des conversations à supprimer"
+  },
+  "Select none": {
+    "en": "Select none",
+    "fr": "Ne rien sélectionner"
+  },
   "Select text and press Ctrl+C. Ctrl+A selects all. Refresh pauses while selecting.": {
     "en": "Select text and press Ctrl+C. Ctrl+A selects all. Refresh pauses while selecting.",
     "fr": "Sélectionner le texte puis Ctrl+C. Ctrl+A sélectionne tout. Le rafraîchissement se suspend pendant la sélection."
@@ -8050,6 +8078,10 @@
   "The transcript is moved to data/conversations/deleted and kept there. It is not sent anywhere and it is not erased.": {
     "en": "The transcript is moved to data/conversations/deleted and kept there. It is not sent anywhere and it is not erased.",
     "fr": "La transcription est déplacée dans data/conversations/deleted et conservée. Elle n'est envoyée nulle part et n'est pas effacée."
+  },
+  "The transcripts are moved to data/conversations/deleted and kept there. They are not sent anywhere and they are not erased.": {
+    "en": "The transcripts are moved to data/conversations/deleted and kept there. They are not sent anywhere and they are not erased.",
+    "fr": "Les transcriptions sont déplacées dans data/conversations/deleted et conservées. Elles ne sont envoyées nulle part et ne sont pas effacées."
   },
   "The worker must stop before resources are released.": {
     "en": "The worker must stop before resources are released.",

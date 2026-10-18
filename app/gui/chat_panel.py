@@ -25,7 +25,9 @@ INPUT_LINES = 4
 _providers = Async()
 _models = {}
 _filter = ''
-_confirm_delete = ''
+_confirm_delete = []             # ids waiting for the confirmation modal
+_selecting = False               # the sidebar shows check boxes to delete several at once
+_selected = set()
 
 
 def provider_reports(interface):
@@ -87,45 +89,73 @@ def draw(interface):
 
 # ---------------------------------------------------------------------- sidebar
 
-def conversation_row(title, subtitle, active, badge_text=''):
-    """A CyUI sidebar row with a second, faint line: the title, then the provider and count."""
+def conversation_row(title, subtitle, active, badge_text='', selecting=False, checked=False,
+                     can_delete=True):
+    """A CyUI sidebar row with a second, faint line: the title, then the provider and count.
+
+    Returns (clicked, delete_clicked). Hovering the row shows a trash button at its right end;
+    in selection mode a check box is drawn at its left end instead.
+    """
     p = cyui.palette()
     width = imgui.get_content_region_avail().x
     line = imgui.get_font_size()
     height = imgui.get_frame_height() + cyui.dp(8) + line
     origin = imgui.get_cursor_screen_pos()
+    imgui.set_next_item_allow_overlap()
     clicked = imgui.invisible_button('##row', ImVec2(width, height))
-    hovered = imgui.is_item_hovered()
+    after = imgui.get_cursor_screen_pos()
+    corner = ImVec2(origin.x + width, origin.y + height)
+    hovered = imgui.is_window_hovered() and imgui.is_mouse_hovering_rect(origin, corner)
     draw = imgui.get_window_draw_list()
     rounding = imgui.get_style().frame_rounding + cyui.dp(2)
-    corner = ImVec2(origin.x + width, origin.y + height)
-    if active:
+    if checked:
+        draw.add_rect_filled(origin, corner, cyui.alpha(p.error, 0.14), rounding)
+        draw.add_rect(origin, corner, cyui.alpha(p.error, 0.45), rounding)
+    elif active and not selecting:
         draw.add_rect_filled(origin, corner, cyui.alpha(p.accent, 0.16), rounding)
         draw.add_rect(origin, corner, cyui.alpha(p.accent, 0.45), rounding)
     elif hovered:
         draw.add_rect_filled(origin, corner, p.bg3, rounding)
     x = origin.x + cyui.dp(10)
     y = origin.y + (height - line * 2.0) * 0.5
-    room = corner.x - x - cyui.dp(8)
-    if badge_text:
+    if selecting:
+        box = line
+        b_min = ImVec2(x, origin.y + (height - box) * 0.5)
+        b_max = ImVec2(b_min.x + box, b_min.y + box)
+        if checked:
+            draw.add_rect_filled(b_min, b_max, p.error, cyui.dp(3))
+            cyui.centred_text(draw, b_min, b_max, p.accentText, cyui.icon.check)
+        else:
+            draw.add_rect(b_min, b_max, p.lineStrong, cyui.dp(3), cyui.dp(1.5))
+        x = b_max.x + cyui.dp(8)
+    right = corner.x - cyui.dp(8)
+    delete_clicked = False
+    if hovered and can_delete and not selecting:
+        size = imgui.get_frame_height()
+        imgui.set_cursor_screen_pos(ImVec2(corner.x - size - cyui.dp(6), origin.y + (height - size) * 0.5))
+        delete_clicked = cyui.icon_button(cyui.icon.trash, tr('Delete this conversation'),
+                                          size=(size, size))
+        right = corner.x - size - cyui.dp(10)
+    elif badge_text:
         with cyui.scoped_font(cyui.bold_font(), 0.74):
             size = imgui.calc_text_size(badge_text)
-            b_max = ImVec2(corner.x - cyui.dp(8), y + size.y + cyui.dp(4))
+            b_max = ImVec2(right, y + size.y + cyui.dp(4))
             b_min = ImVec2(b_max.x - size.x - cyui.dp(10), y)
             draw.add_rect_filled(b_min, b_max, p.accent, height)
             draw.add_text(ImVec2(b_min.x + cyui.dp(5), b_min.y + cyui.dp(2)), p.accentText, badge_text)
-        room = b_min.x - x - cyui.dp(6)
-    with cyui.scoped_font(cyui.bold_font() if active else None, 1.0):
-        cyui.clipped_text(draw, ImVec2(x, y), room, p.text if active or hovered else p.textDim, title)
+        right = b_min.x - cyui.dp(6)
+    with cyui.scoped_font(cyui.bold_font() if active and not selecting else None, 1.0):
+        cyui.clipped_text(draw, ImVec2(x, y), right - x,
+                          p.text if active or hovered or checked else p.textDim, title)
     with cyui.scoped_font(None, 0.86):
-        cyui.clipped_text(draw, ImVec2(x, y + line + cyui.dp(1)), corner.x - x - cyui.dp(8),
-                          p.textFaint, subtitle)
+        cyui.clipped_text(draw, ImVec2(x, y + line + cyui.dp(1)), right - x, p.textFaint, subtitle)
+    imgui.set_cursor_screen_pos(after)
     imgui.dummy(ImVec2(0, cyui.dp(1)))
-    return clicked
+    return clicked, delete_clicked
 
 
 def draw_sidebar(interface):
-    global _filter, _confirm_delete
+    global _filter, _confirm_delete, _selecting, _selected
     p = cyui.palette()
     with cyui.scoped_color(imgui.Col_.child_bg, p.bg0), \
             cyui.scoped_var(imgui.StyleVar_.window_padding, cyui.dp2(10, 10)):
@@ -140,12 +170,21 @@ def draw_sidebar(interface):
         cyui.callout('error', str(exc))
         imgui.end_child()
         return
+    _selected &= {row['id'] for row in rows}
     cyui.overline(tr('CONVERSATIONS'), p.textFaint)
     imgui.same_line()
     cyui.badge(str(len(rows)))
+    if rows:
+        imgui.same_line()
+        imgui.set_cursor_pos_x(imgui.get_cursor_pos_x() + imgui.get_content_region_avail().x
+                               - imgui.get_frame_height() - cyui.dp(2))
+        if cyui.icon_button(cyui.icon.check, tr('Select conversations to delete'), active=_selecting):
+            _selecting, _selected = not _selecting, set()
     cyui.space(4)
-    if cyui.icon_text_button(cyui.icon.add, tr('New conversation') + '###new-conversation',
-                             size=(-1, 0)):
+    if _selecting:
+        draw_selection_bar(rows)
+    elif cyui.icon_text_button(cyui.icon.add, tr('New conversation') + '###new-conversation',
+                               size=(-1, 0)):
         interface.new_tab()
     cyui.space(2)
     _, _filter = cyui.search_field('##filter', _filter, tr('Search conversations'), -1)
@@ -159,14 +198,21 @@ def draw_sidebar(interface):
     busy = {tab.id for tab in interface.tabs if tab.busy}
     for row in shown_rows:
         imgui.push_id(row['id'])
-        subtitle = '%s  ·  %d %s' % (row['providerId'] or tr('no provider'), row['messageCount'],
-                                     tr('messages'))
-        if conversation_row(row['title'], subtitle, row['id'] == interface.selected,
-                            tr('busy').upper() if row['id'] in busy else ''):
+        subtitle = '%s  ·  %d %s  ·  %s' % (row['providerId'] or tr('no provider'), row['messageCount'],
+                                            tr('messages'), row['updated'][:10])
+        clicked, delete_clicked = conversation_row(
+            row['title'], subtitle, row['id'] == interface.selected,
+            tr('busy').upper() if row['id'] in busy else '', _selecting, row['id'] in _selected,
+            row['id'] not in busy)
+        if delete_clicked:
+            _confirm_delete = [row['id']]
+        elif clicked and _selecting:
+            _selected ^= {row['id']}
+        elif clicked:
             interface.open_tab(row['id'])
         cyui.tooltip('%s\n%s  ·  %s\n%s' % (row['title'], row['providerId'] or tr('no provider'),
                                             row['model'] or tr('no model'), row['updated'][:19]))
-        if imgui.begin_popup_context_item('##menu'):
+        if not _selecting and imgui.begin_popup_context_item('##menu'):
             if imgui.menu_item(label('Open in a tab'), '', False)[0]:
                 interface.open_tab(row['id'])
             if imgui.menu_item(label('Export to Markdown'), '', False)[0]:
@@ -175,34 +221,61 @@ def draw_sidebar(interface):
                 export(interface, row['id'], 'json')
             imgui.separator()
             if imgui.menu_item(label('Delete'), '', False)[0]:
-                _confirm_delete = row['id']
+                _confirm_delete = [row['id']]
             imgui.end_popup()
         imgui.pop_id()
     imgui.end_child()
     draw_delete_confirmation(interface)
 
 
+def draw_selection_bar(rows):
+    """Selection mode: select all or none, then one danger button deleting the ticked ones."""
+    global _selecting, _selected, _confirm_delete
+    every = len(_selected) == len(rows)
+    if cyui.icon_button(cyui.icon.check, tr('Select none') if every else tr('Select all'), active=every):
+        _selected = set() if every else {row['id'] for row in rows}
+    imgui.same_line()
+    if cyui.icon_button(cyui.icon.close, tr('Cancel the selection')):
+        _selecting, _selected = False, set()
+    imgui.same_line()
+    count = len(_selected)
+    imgui.begin_disabled(not count)
+    if cyui.button('%s (%d)###delete-selected' % (tr('Delete'), count), 'danger', size=(-1, 0)):
+        _confirm_delete = [row['id'] for row in rows if row['id'] in _selected]
+    imgui.end_disabled()
+
+
 def draw_delete_confirmation(interface):
-    global _confirm_delete
+    global _confirm_delete, _selecting, _selected
     if not _confirm_delete:
         return
-    shown, still_open = cyui.begin_modal(tr('Delete this conversation?') + '###delete-conversation',
-                                         True)
+    several = len(_confirm_delete) > 1
+    title = (tr('Delete %d conversations?') % len(_confirm_delete)) if several \
+        else tr('Delete this conversation?')
+    shown, still_open = cyui.begin_modal(title + '###delete-conversation', True)
     if not shown:
-        _confirm_delete = ''
+        _confirm_delete = []
         return
-    imgui.text_wrapped(tr('The transcript is moved to data/conversations/deleted and kept there. '
+    imgui.text_wrapped(tr('The transcripts are moved to data/conversations/deleted and kept there. '
+                          'They are not sent anywhere and they are not erased.') if several else
+                       tr('The transcript is moved to data/conversations/deleted and kept there. '
                           'It is not sent anywhere and it is not erased.'))
     answer = cyui.modal_buttons(tr('Delete') + '###confirm-delete', tr('Cancel') + '###cancel-delete',
                                 danger=True)
     if answer == 1:
-        try:
-            interface.delete_conversation(_confirm_delete)
-            cyui.notify(tr('Conversation moved to data/conversations/deleted.'), 'success')
-        except CyToolError as exc:
-            interface.error = str(exc)
+        done = 0
+        for conversation_id in _confirm_delete:
+            try:
+                interface.delete_conversation(conversation_id)
+                done += 1
+            except CyToolError as exc:
+                interface.error = str(exc)
+        if done:
+            cyui.notify(tr('Conversation moved to data/conversations/deleted.') if done == 1 else
+                        tr('%d conversations moved to data/conversations/deleted.') % done, 'success')
+        _selecting, _selected = False, set()
     if answer or not still_open:
-        _confirm_delete = ''
+        _confirm_delete = []
     cyui.end_modal()
 
 

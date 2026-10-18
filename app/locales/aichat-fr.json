@@ -284,5 +284,13 @@
   "Compact": "Compact",
   "Comfortable": "Confortable",
   "Density": "Densité",
-  "Installed": "Installés"
+  "Installed": "Installés",
+  "Delete this conversation": "Supprimer cette conversation",
+  "Select conversations to delete": "Sélectionner des conversations à supprimer",
+  "Select all": "Tout sélectionner",
+  "Select none": "Ne rien sélectionner",
+  "Cancel the selection": "Annuler la sélection",
+  "Delete %d conversations?": "Supprimer %d conversations ?",
+  "The transcripts are moved to data/conversations/deleted and kept there. They are not sent anywhere and they are not erased.": "Les transcriptions sont déplacées dans data/conversations/deleted et conservées. Elles ne sont envoyées nulle part et ne sont pas effacées.",
+  "%d conversations moved to data/conversations/deleted.": "%d conversations déplacées dans data/conversations/deleted."
 }
