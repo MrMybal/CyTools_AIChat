@@ -2,6 +2,11 @@
 
 Maintenance : **Cyberalien**.
 
+<p align="center">
+  <img src="docs/screenshots/providers.png" alt="Onglet Fournisseurs" width="49%">
+  <img src="docs/screenshots/speech.png" alt="Onglet Voix" width="49%">
+</p>
+
 Un moteur de discussion : plusieurs conversations ouvertes en onglets, gardées sur le disque,
 avec les modèles auxquels vous avez déjà accès — Codex, Claude Code, Antigravity, un point
 d'accès OpenAI-compatible, Ollama — et avec des modèles GGUF locaux auxquels vous pouvez
@@ -100,8 +105,9 @@ Le texte des messages se sélectionne à la souris et se copie avec Ctrl+C ; *Co
 message entier.
 
 Elles sont dans `data/conversations/`, un fichier JSON lisible par conversation. Fermer un
-onglet ne supprime rien. Supprimer une conversation la déplace dans
-`data/conversations/deleted/` : rien n'est effacé et rien n'est envoyé ailleurs. Une mise à
+onglet ne supprime rien. Pour retirer une conversation, survolez-la et cliquez sur la
+corbeille ; pour en retirer plusieurs, cliquez sur la coche à côté de CONVERSATIONS,
+cochez-les puis **Supprimer**. Elles sont déplacées dans `data/conversations/deleted/` : rien n'est effacé et rien n'est envoyé ailleurs. Une mise à
 jour de l'application ne touche jamais `data/`.
 
 Les boutons **Copier la conversation** et **Exporter en Markdown** sont sous la zone de

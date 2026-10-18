@@ -14,12 +14,18 @@ French user guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md
 
 Maintenance: **Cyberalien**.
 
+<p align="center">
+  <img src="docs/screenshots/providers.png" alt="Providers tab: agent command lines, HTTP endpoints and APIs detected on the machine" width="49%">
+  <img src="docs/screenshots/speech.png" alt="Speech tab: dictation and reading aloud settings, voices" width="49%">
+</p>
+
 ## What it does
 
 - **Conversations in tabs**, each one a readable JSON document in `data/conversations/`.
   Message text can be selected with the mouse and copied (Ctrl+C), or copied whole.
-  Closing a tab deletes nothing; deleting a conversation moves it to a backup folder. Open
-  tabs are restored at the next start. Export to Markdown or JSON.
+  Closing a tab deletes nothing. The trash button on a conversation, or the selection
+  mode (several at once), moves it to a backup folder. Open tabs are restored at the next
+  start. Export to Markdown or JSON.
 - **Two provider families, told apart in the interface and in every stored message.** A
   *session* provider (Codex, Claude Code, Antigravity, OpenCode) keeps the history on its
   side and is resumed by its native identifier; it uses the account already signed in inside
