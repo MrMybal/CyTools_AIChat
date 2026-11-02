@@ -94,3 +94,10 @@ Speech models are downloaded from the Speech tab after the user accepts each lic
     https://huggingface.co/charactr/vocos-mel-24khz
 Their pinned revisions and digests are in app/speech-catalog.json. The non-commercial
 licences also cover the audio those models produce.
+
+CyUI 1.2.0 (MIT)
+Repository: https://github.com/MrMybal/CyUI
+License: https://github.com/MrMybal/CyUI/blob/main/LICENSE
+Full text: LICENCES/CyUI-MIT.txt
+Revision: 8367401fe45fc22bfed5e227cb3de343177f676b
+Selected file hashes: app/cyui-source.json

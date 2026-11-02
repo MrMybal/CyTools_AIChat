@@ -115,3 +115,11 @@ runtime\python\Scripts\python.exe app\tests\acceptance_http.py --engine cuda
 runtime\python\Scripts\python.exe app\tests\acceptance_mcp.py
 runtime\python\Scripts\python.exe app\tests\acceptance_update.py
 ```
+
+## Modular CyUI maintenance
+
+Read Docs/CyUIMigration.md. cyui.py and cyui_modules/ are unmodified upstream files pinned
+and hashed in cyui-source.json. Do not patch them locally; keep product adapters outside
+the library. Refresh with scripts/sync_cyui.py from the exact revision. Preserve domain
+behavior, isolated view state, cancellation and Undo transactions; run the app suite and
+tests/test_modular_ui.py. Keep both CyUI MIT notices and the upstream license link.

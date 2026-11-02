@@ -1,0 +1,28 @@
+{
+  "component": "CyUI Python",
+  "version": "1.2.0",
+  "repository": "https://github.com/MrMybal/CyUI",
+  "revision": "8367401fe45fc22bfed5e227cb3de343177f676b",
+  "license": "MIT",
+  "licenseUrl": "https://github.com/MrMybal/CyUI/blob/main/LICENSE",
+  "modules": [
+    "documents",
+    "code",
+    "audio",
+    "diagnostics"
+  ],
+  "integration": "Selected unmodified upstream Python sources; application adapters remain outside CyUI.",
+  "files": {
+    "cyui.py": "0380ecc17621c8e43babafb0e352537f317a80257ac863f5e2f29a8285a4f787",
+    "cyui_modules/__init__.py": "10a3f3e786d2ae6f85e76b2cc42defb56bc5bdb07f72ffcf198566544fd6b19e",
+    "cyui_modules/common.py": "e6337adf8b035153a8306a061db1b240a0d128b62a9d7c4d77909d224c92a1f9",
+    "cyui_modules/locale.py": "54dea8d092a7646a2531506dc3f77111ac1e01ac190cbd40c398a0caded8faae",
+    "cyui_modules/_locale_catalog.py": "dbc3b36d15b2410106247f5edf986cd2de16c39265b3ec531f2606464abd0e2d",
+    "cyui_modules/filters.py": "bb79da1aab4f272c75682f6462204b09bdff2a82002342eaeab95ace8a3968ca",
+    "cyui_modules/documents.py": "21be529df2254acca3317b992582bd02fe91c921a526020cd2f351e3f05f0d94",
+    "cyui_modules/code.py": "1025f03d530a5f7a3cbd75572be9a4e43e0a8e83569f74970e484e41b887c5be",
+    "cyui_modules/audio.py": "d27570ebdf81fcf32d99739c1d5a6a56093fb7dcd31ec59e9944bb0730e86ea1",
+    "cyui_modules/diagnostics.py": "44e93e24a0d57d8bcb7103768f6110dff6106b5544de17435a02c19d9f5c4887"
+  },
+  "modifications": []
+}

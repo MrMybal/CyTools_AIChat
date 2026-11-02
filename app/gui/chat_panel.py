@@ -18,6 +18,8 @@ from ui_common import imgui, label, tr
 
 from aichat import conversations, credentials, library, presets
 from .widgets import Async, card, combo, selectable_text, wrapped
+from .document_view import message_view, prune
+from cyui_modules.audio import meter
 
 SIDEBAR_WIDTH = 280.0
 INPUT_LINES = 4
@@ -608,6 +610,7 @@ def draw_local_settings(interface, tab, settings):
 
 def draw_transcript(interface, tab):
     document = tab.document
+    prune(tab)
     messages = document.get('messages', [])
     if not messages and not tab.live and not tab.busy:
         cyui.empty_state(tr('No message yet'), tr('Write below and press Send (Ctrl+Enter).'),
@@ -659,12 +662,12 @@ def draw_message(interface, tab, message):
             # A cancelled turn usually holds what had already been streamed. Showing the text as
             # well as the reason is the difference between "it stopped here" and "nothing happened".
             if message.get('text'):
-                selectable_text(message['id'], message['text'])
+                message_view(tab,message['id']).draw(message['id'],message['text'])
             cyui.callout('error', '%s: %s' % (tr(message.get('error', 'Error')),
                                                  message.get('errorMessage', '')))
         else:
             # Selectable: part of a reply can be copied, not only the whole message.
-            selectable_text(message['id'], message.get('text', ''))
+            message_view(tab,message['id']).draw(message['id'],message.get('text',''))
         if message.get('systemPromptFolded'):
             cyui.text_faint(tr('The system prompt was folded into this message: this provider has '
                                'no separate system field.'))
@@ -678,14 +681,17 @@ def draw_message(interface, tab, message):
 
 def draw_message_actions(interface, tab, message, role):
     """Icon buttons on the right of the message header."""
-    buttons = 2 if role == 'assistant' and message.get('text') and not message.get('failed') else 1
+    buttons = 3 if role == 'assistant' and message.get('text') and not message.get('failed') else 2
     size = imgui.get_frame_height() + cyui.dp(2)
     imgui.same_line()
     cyui.align_right(buttons * (size + imgui.get_style().item_spacing.x))
     if cyui.icon_button(cyui.icon.copy, tr('Copy the whole message')):
         imgui.set_clipboard_text(message.get('text', ''))
         cyui.notify(tr('Message copied.'), 'success', 2.0)
-    if buttons == 2:
+    imgui.same_line()
+    view=message_view(tab,message['id'])
+    if cyui.icon_button(cyui.icon.code,tr('Show selectable source'),view.source):view.source=not view.source
+    if buttons == 3:
         imgui.same_line()
         draw_read_button(interface, tab, message)
 
@@ -715,9 +721,9 @@ def draw_live(tab, live):
                                                       tab.show_thinking)
             if tab.show_thinking:
                 with cyui.scoped_color(imgui.Col_.text, cyui.palette().textFaint):
-                    wrapped(''.join(tab.live_thinking))
+                    message_view(tab,'thinking').draw('thinking',''.join(tab.live_thinking))
         if live:
-            wrapped(live)
+            message_view(tab,'live').draw('live',live)
         else:
             cyui.text_faint(tr('Waiting for the first tokens...'))
 
@@ -737,8 +743,7 @@ def draw_dictation(interface, tab):
         imgui.align_text_to_frame_padding()
         cyui.text_dim('%.1f / %.0f s' % (recorder.seconds, recorder.limit))
         imgui.same_line()
-        cyui.progress_bar(min(1.0, recorder.level * 6.0), (cyui.dp(80), cyui.dp(6)),
-                          tone='success')
+        meter('##dictation-level',[min(1.,recorder.level*6.)],[min(1.,recorder.level)],(80,12),vertical=False)
     elif job is not None:
         cyui.spinner('##dictation-finishing', 7)
         cyui.tooltip(tr('Finishing the dictation...'))

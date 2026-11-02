@@ -155,3 +155,9 @@ The Models tab asks for your acceptance before downloading.
   `data/` is never replaced.
 - **Going back**: *Roll back* in the Updates tab restores the previous `app/` and licence
   files. From source, check out the earlier commit and run the same `pip install` again.
+
+## Modular interface
+
+CyUI 1.2.0 provides the selected shared interface modules. See [integration and maintenance](app/Docs/CyUIMigration.md) for the module map, preserved application behavior and validation limits.
+
+CyUI: MIT ([upstream license](https://github.com/MrMybal/CyUI/blob/main/LICENSE)); the complete text is included in LICENCES/CyUI-MIT.txt.

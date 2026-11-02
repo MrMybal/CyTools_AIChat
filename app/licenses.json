@@ -7,11 +7,12 @@
     "notes": "Copyright (c) 2026 Cyberalien. Runtime, transports and the scaffolded interface files in app/. Full text in LICENCES/CyToolsCore-MIT.txt and app/LICENSE-CyToolsCore.txt; installed from the public repository at the commit pinned in app/requirements.txt."
   },
   {
-    "kind": "Component",
-    "name": "CyUI (Python port, vendored as app/cyui.py)",
+    "kind": "Interface library",
+    "name": "CyUI 1.2.0 (selected Python modules)",
     "license": "MIT",
-    "url": "",
-    "notes": "Copyright (c) 2026 Cyberalien. Themes, fonts and widgets of the window; an unchanged copy of python/cyui.py from the author's CyImgui_Interface project (not published). Full text in LICENCES/CyUI-MIT.txt. The Windows fonts it uses are read from the system and not shipped."
+    "url": "https://github.com/MrMybal/CyUI/blob/main/LICENSE",
+    "notes": "Full MIT license in LICENCES/CyUI-MIT.txt. Upstream is currently private; no upstream checkout or account is required to run this application.",
+    "repository": "https://github.com/MrMybal/CyUI"
   },
   {
     "kind": "Engine",

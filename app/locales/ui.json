@@ -9358,5 +9358,21 @@
   "État : installé et vérifié (tailles épinglées).": {
     "en": "Status: installed and verified (pinned sizes).",
     "fr": "État : installé et vérifié (tailles épinglées)."
+  },
+  "Structured log": {
+    "en": "Structured log",
+    "fr": "Journal structuré"
+  },
+  "Selectable text": {
+    "en": "Selectable text",
+    "fr": "Texte sélectionnable"
+  },
+  "Show selectable source": {
+    "en": "Show selectable source",
+    "fr": "Afficher le texte source sélectionnable"
+  },
+  "Timeline duration must be between 0.1 and 600 seconds.": {
+    "en": "Timeline duration must be between 0.1 and 600 seconds.",
+    "fr": "La durée doit être comprise entre 0,1 et 600 secondes."
   }
 }

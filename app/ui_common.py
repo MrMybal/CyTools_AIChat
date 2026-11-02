@@ -54,6 +54,8 @@ class Preferences:
 
 preferences = Preferences()
 catalog = read(APP/'locales/ui.json', {})
+from cyui_modules.locale import register_translations
+register_translations('fr',{key:value['fr'] for key,value in catalog.items() if isinstance(value,dict) and isinstance(value.get('fr'),str)})
 def normalized(text):
     return ''.join(c for c in unicodedata.normalize('NFKD',text) if not unicodedata.combining(c)).replace('’',"'").casefold()
 _normalized = {normalized(k):v for k,v in catalog.items()}
@@ -285,6 +287,8 @@ def raw():
 def tr(text):
     if not isinstance(text, str) or not text: return text
     language = preferences.values['language']
+    from cyui_modules.locale import set_locale
+    set_locale(language)
     translation = catalog.get(text)
     if translation is None and text in _translated: return text
     translation = translation or _normalized.get(normalized(text))

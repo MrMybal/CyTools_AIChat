@@ -3,7 +3,7 @@
   "protocolVersion": "1.0",
   "id": "cy.tool.aichat",
   "name": "CyTools_AIChat",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A chat engine for connected agent CLIs, HTTP model APIs and local GGUF models with LoRA adapters. Conversations are kept on disk and opened in tabs in the standalone window.",
   "vendor": "Cyberalien",
   "author": "Cyberalien",
