@@ -11,7 +11,7 @@
     "name": "CyUI 1.2.0 (selected Python modules)",
     "license": "MIT",
     "url": "https://github.com/MrMybal/CyUI/blob/main/LICENSE",
-    "notes": "Full MIT license in LICENCES/CyUI-MIT.txt. Upstream is currently private; no upstream checkout or account is required to run this application.",
+    "notes": "The full MIT license and selected sources are bundled. No upstream checkout or account is required to run the application.",
     "repository": "https://github.com/MrMybal/CyUI"
   },
   {

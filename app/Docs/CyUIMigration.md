@@ -2,8 +2,7 @@
 
 The standalone application includes unmodified CyUI 1.2.0 Python sources, pinned to
 revision 8367401fe45fc22bfed5e227cb3de343177f676b. The source hashes and selected modules
-are recorded in app/cyui-source.json. The upstream repository is currently private;
-the installed application does not need an upstream checkout or account.
+are recorded in app/cyui-source.json. The installed application does not need an upstream checkout or account.
 
 ## Modules and ownership
 
