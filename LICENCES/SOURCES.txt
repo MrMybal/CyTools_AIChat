@@ -101,3 +101,7 @@ License: https://github.com/MrMybal/CyUI/blob/main/LICENSE
 Full text: LICENCES/CyUI-MIT.txt
 Revision: 8367401fe45fc22bfed5e227cb3de343177f676b
 Selected file hashes: app/cyui-source.json
+
+CyDoc 0.1.0 (MIT)
+https://github.com/MrMybal/CyDoc
+Revision: 774f2a7eabf7dd181a98ffc5add115b580b67f42

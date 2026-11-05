@@ -9374,5 +9374,21 @@
   "Timeline duration must be between 0.1 and 600 seconds.": {
     "en": "Timeline duration must be between 0.1 and 600 seconds.",
     "fr": "La durée doit être comprise entre 0,1 et 600 secondes."
+  },
+  "Documentation": {
+    "en": "Documentation",
+    "fr": "Documentation"
+  },
+  "Open local manual (F1)": {
+    "en": "Open local manual (F1)",
+    "fr": "Ouvrir le manuel local (F1)"
+  },
+  "Help for current workspace": {
+    "en": "Help for current workspace",
+    "fr": "Aide du panneau actuel"
+  },
+  "The manual opens locally in your browser and works offline.": {
+    "en": "The manual opens locally in your browser and works offline.",
+    "fr": "Le manuel s’ouvre localement dans le navigateur et fonctionne hors ligne."
   }
 }

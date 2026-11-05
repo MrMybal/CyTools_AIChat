@@ -1,0 +1,839 @@
+{
+  "schemaVersion": 1,
+  "legacyPaths": {
+    "LISEZ-MOI.md": "guide-lisez-moi",
+    "README.md": "guide-readme",
+    "app/Docs/Architecture.md": "guide-app-docs-architecture",
+    "app/Docs/AutomaticInputs.md": "guide-app-docs-automaticinputs",
+    "app/Docs/CapabilityCoverage.md": "guide-app-docs-capabilitycoverage",
+    "app/Docs/CreatingYourFirstCyTool.md": "guide-app-docs-creatingyourfirstcytool",
+    "app/Docs/CyUIMigration.md": "guide-app-docs-cyuimigration",
+    "app/Docs/Dependencies.md": "guide-app-docs-dependencies",
+    "app/Docs/Downloads.md": "guide-app-docs-downloads",
+    "app/Docs/ErrorModel.md": "guide-app-docs-errormodel",
+    "app/Docs/Events.md": "guide-app-docs-events",
+    "app/Docs/FullOperationAccess.md": "guide-app-docs-fulloperationaccess",
+    "app/Docs/GenerationConfigurations.md": "guide-app-docs-generationconfigurations",
+    "app/Docs/ImplementationStatus.md": "guide-app-docs-implementationstatus",
+    "app/Docs/Index.md": "guide-app-docs-index",
+    "app/Docs/Jobs.md": "guide-app-docs-jobs",
+    "app/Docs/Licensing.md": "guide-app-docs-licensing",
+    "app/Docs/Localization.md": "guide-app-docs-localization",
+    "app/Docs/MCP.md": "guide-app-docs-mcp",
+    "app/Docs/MeshViewer.md": "guide-app-docs-meshviewer",
+    "app/Docs/Models.md": "guide-app-docs-models",
+    "app/Docs/MultiClient.md": "guide-app-docs-multiclient",
+    "app/Docs/Operations.md": "guide-app-docs-operations",
+    "app/Docs/Outputs.md": "guide-app-docs-outputs",
+    "app/Docs/Overview.md": "guide-app-docs-overview",
+    "app/Docs/Parameters.md": "guide-app-docs-parameters",
+    "app/Docs/Platforms.md": "guide-app-docs-platforms",
+    "app/Docs/Protocol.md": "guide-app-docs-protocol",
+    "app/Docs/Resources.md": "guide-app-docs-resources",
+    "app/Docs/Scheduler.md": "guide-app-docs-scheduler",
+    "app/Docs/SharedInstallation.md": "guide-app-docs-sharedinstallation",
+    "app/Docs/StandaloneDelivery.md": "guide-app-docs-standalonedelivery",
+    "app/Docs/StandaloneDiagnosticsAndModels.md": "guide-app-docs-standalonediagnosticsandmodels",
+    "app/Docs/TaskFiles.md": "guide-app-docs-taskfiles",
+    "app/Docs/ToolFinalization.md": "guide-app-docs-toolfinalization",
+    "app/Docs/ToolManifest.md": "guide-app-docs-toolmanifest",
+    "app/Docs/Transports.md": "guide-app-docs-transports",
+    "app/Docs/UnrealIntegration.md": "guide-app-docs-unrealintegration",
+    "app/Docs/UpdateExistingProducts.md": "guide-app-docs-updateexistingproducts",
+    "app/Docs/Validation.md": "guide-app-docs-validation",
+    "app/Docs/Versioning.md": "guide-app-docs-versioning",
+    "app/Docs/Workers.md": "guide-app-docs-workers",
+    "app/README.md": "guide-app-readme",
+    "app/documentation/README.md": "guide-app-documentation-readme",
+    "app/documentation/VALIDATION.md": "guide-app-documentation-validation"
+  },
+  "pages": {
+    "guide-app-docs-architecture": {
+      "headings": [
+        "architecture",
+        "choix-initiaux",
+        "propriete-et-synchronisation",
+        "persistance"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-automaticinputs": {
+      "headings": [
+        "entrees-locales-automatiques",
+        "duree-de-vie",
+        "task-owned-files-sdk-0-9-0"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-capabilitycoverage": {
+      "headings": [
+        "couverture-des-capacites-cytools-aichat-0-2-0",
+        "1-fournisseurs",
+        "2-modeles-locaux-lora-et-peripheriques",
+        "modeles-locaux-reellement-executes",
+        "modeles-de-raisonnement",
+        "3-parametres-d-inference",
+        "4-operations-et-parite",
+        "5-annulation-et-liberation-des-ressources",
+        "6-mises-a-jour",
+        "7-voix-dictee-et-lecture-0-2-0-execute-le-2026-10-06",
+        "8-ce-qui-n-est-pas-dans-cette-version"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-creatingyourfirstcytool": {
+      "headings": [
+        "creer-son-premier-cytool",
+        "ajouter-une-operation",
+        "lancer-en-mcp",
+        "livrer"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-cyuimigration": {
+      "headings": [
+        "modular-cyui-integration",
+        "modules-and-ownership",
+        "build-and-maintenance",
+        "license"
+      ],
+      "locale": "en"
+    },
+    "guide-app-docs-dependencies": {
+      "headings": [
+        "dependances"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-downloads": {
+      "headings": [
+        "telechargements"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-errormodel": {
+      "headings": [
+        "erreurs"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-events": {
+      "headings": [
+        "evenements-et-logs"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-fulloperationaccess": {
+      "headings": [
+        "capacites-completes-et-orchestration",
+        "obligation-pour-la-creation-ou-la-finalisation-d-un-tool",
+        "client-ia-orchestrateur",
+        "composition-des-taches",
+        "portee-de-la-livraison-0-7-0",
+        "task-owned-files-sdk-0-9-0"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-generationconfigurations": {
+      "headings": [
+        "sauvegarder-et-recharger-une-configuration-de-generation",
+        "format-portable-versionne",
+        "reutilisation-par-une-ia",
+        "integration-et-tests"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-implementationstatus": {
+      "headings": [
+        "etat-de-l-implementation-0-10-1",
+        "limites-explicites",
+        "installation-partagee-0-4-0",
+        "statut-et-groupes-d-exclusivite-0-10-0"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-index": {
+      "headings": [
+        "documentation-cytoolscore",
+        "pour-creer-un-tool",
+        "standard-et-architecture",
+        "execution",
+        "validation-et-limites",
+        "mettre-a-jour-un-produit-existant"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-jobs": {
+      "headings": [
+        "jobs"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-licensing": {
+      "headings": [
+        "licence-et-redistribution",
+        "depots-sources"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-localization": {
+      "headings": [
+        "interface-multilingue-options-et-licences",
+        "comportement-attendu",
+        "integration-fournie-par-cytools-new-desktop",
+        "licences-dans-options",
+        "validation"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-mcp": {
+      "headings": [
+        "adaptateur-mcp"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-meshviewer": {
+      "headings": [
+        "visualisation-3d-obligatoire-pour-les-tools-de-maillage",
+        "interaction",
+        "scene-et-materiaux",
+        "integration-fournie",
+        "verification-avant-livraison"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-models": {
+      "headings": [
+        "backends-et-modeles"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-multiclient": {
+      "headings": [
+        "plusieurs-clients-sur-un-meme-tool"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-operations": {
+      "headings": [
+        "operations"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-outputs": {
+      "headings": [
+        "sorties"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-overview": {
+      "headings": [
+        "vue-d-ensemble"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-parameters": {
+      "headings": [
+        "parametres-et-generation-d-ui"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-platforms": {
+      "headings": [
+        "plateformes"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-protocol": {
+      "headings": [
+        "cytools-protocol-1-0",
+        "temporary-tasks-sdk-0-9-0",
+        "statut-et-attente-de-concurrence-sdk-0-10-0"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-resources": {
+      "headings": [
+        "ressources"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-scheduler": {
+      "headings": [
+        "scheduler-local",
+        "groupes-d-exclusivite-par-operation-sdk-0-10-0"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-sharedinstallation": {
+      "headings": [
+        "stockage-des-installations-et-telechargements",
+        "options-communes",
+        "ce-que-le-sdk-implemente",
+        "integration-obligatoire",
+        "acces-aux-modeles-et-premier-lancement",
+        "verifications"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-standalonedelivery": {
+      "headings": [
+        "livraison-obligatoire-d-un-cytool-autonome",
+        "1-dossier-utilisateur-propre",
+        "2-une-vraie-interface-dear-imgui",
+        "3-installer-un-modele-depuis-l-interface",
+        "4-github-application-moteur-et-poids-sont-distincts",
+        "5-lanceurs-et-distribution",
+        "6-verifications-de-livraison",
+        "journaux-et-modeles"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-standalonediagnosticsandmodels": {
+      "headings": [
+        "journaux-modeles-personnalises-lora-et-peripheriques",
+        "journal-consultable-et-copiable",
+        "resolution-video-et-peripherique",
+        "bibliotheque-locale-et-lora",
+        "validation"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-taskfiles": {
+      "headings": [
+        "task-files-sdk-0-9-0",
+        "tool-implementation-mandatory",
+        "ai-mcp-use",
+        "standalone-and-compatibility",
+        "verification-required-before-delivery"
+      ],
+      "locale": "en"
+    },
+    "guide-app-docs-toolfinalization": {
+      "headings": [
+        "tool-delivery-checklist"
+      ],
+      "locale": "en"
+    },
+    "guide-app-docs-toolmanifest": {
+      "headings": [
+        "manifest-du-tool"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-transports": {
+      "headings": [
+        "transports"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-unrealintegration": {
+      "headings": [
+        "unreal-integration"
+      ],
+      "locale": "en"
+    },
+    "guide-app-docs-updateexistingproducts": {
+      "headings": [
+        "mettre-a-jour-les-logiciels-et-plugins-qui-utilisent-les-sdk-cy",
+        "1-sauvegarder-avant-toute-modification",
+        "2-identifier-l-integration-et-les-versions-reellement-utilisees",
+        "3-mettre-a-jour-le-core-dans-le-logiciel",
+        "4-livrer-les-licences-et-sources-dans-licences",
+        "5-adapter-cyuemcpsdk-a-chaque-plugin-unreal",
+        "6-verifier-la-livraison-reelle",
+        "7-livrer-la-migration"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-validation": {
+      "headings": [
+        "validation"
+      ],
+      "locale": "en"
+    },
+    "guide-app-docs-versioning": {
+      "headings": [
+        "versions-et-compatibilite",
+        "sdk-0-10-0",
+        "sdk-0-10-1"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-docs-workers": {
+      "headings": [
+        "workers-et-liberation",
+        "statut-des-adaptateurs-personnalises"
+      ],
+      "locale": "fr"
+    },
+    "guide-app-documentation-readme": {
+      "headings": [
+        "local-documentation-cydoc"
+      ],
+      "locale": "en"
+    },
+    "guide-app-documentation-validation": {
+      "headings": [
+        "cydoc-migration-validation",
+        "scope",
+        "checks-executed-on-windows",
+        "limits",
+        "regenerate-and-verify"
+      ],
+      "locale": "en"
+    },
+    "guide-app-readme": {
+      "headings": [
+        "cytools-aichat-developer-documentation",
+        "layout",
+        "install",
+        "run",
+        "identity-and-permissions",
+        "speech",
+        "adding-a-provider",
+        "look-and-feel",
+        "interface-strings",
+        "tests",
+        "importing-weights-another-cytool-already-has",
+        "updating-the-pinned-llama-cpp-release",
+        "publishing-an-application-release",
+        "updating-an-installation-and-going-back",
+        "application-icon",
+        "modular-interface"
+      ],
+      "locale": "en"
+    },
+    "guide-lisez-moi": {
+      "headings": [
+        "cytools-aichat",
+        "demarrer",
+        "choisir-un-fournisseur",
+        "utiliser-un-modele-local",
+        "dicter-et-ecouter",
+        "vos-conversations",
+        "quand-quelque-chose-ne-va-pas",
+        "ce-qui-a-ete-reellement-verifie",
+        "licence",
+        "mettre-a-jour-revenir-en-arriere",
+        "documentation-locale"
+      ],
+      "locale": "fr"
+    },
+    "guide-readme": {
+      "headings": [
+        "cytools-aichat",
+        "what-it-does",
+        "requirements",
+        "installation-from-source",
+        "first-launch",
+        "command-line-and-mcp",
+        "repository-layout",
+        "licence",
+        "updating-and-going-back",
+        "modular-interface",
+        "local-documentation"
+      ],
+      "locale": "en"
+    },
+    "licenses": {
+      "headings": [],
+      "locale": "en"
+    },
+    "migration-notes": {
+      "headings": [
+        "scope",
+        "modules",
+        "source-documentation",
+        "gaps"
+      ],
+      "locale": "en"
+    },
+    "operation-chat": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-conversation-create": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-conversation-delete": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-conversation-export": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-conversation-list": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-conversation-read": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-conversation-reset-session": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-credential-clear": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-credential-status": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-diagnostics": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-engine-install": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-engine-list": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-engine-remove": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-list-provider-models": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-list-providers": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-lora-scale": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-model-install": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-model-library-list": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-model-library-register": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-model-list": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-model-repair": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-model-uninstall": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-preset-delete": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-preset-list": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-preset-save": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-resident-status": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-resident-unload": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-speak": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-speech-engine-install": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-speech-engine-remove": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-speech-settings": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-speech-status": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-speech-unload": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-transcribe-live": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-transcribe": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-update-apply": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-update-check": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-update-download": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-update-rollback": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-update-settings": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-voice-add": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-voice-delete": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operation-voice-list": {
+      "headings": [
+        "contract",
+        "usage"
+      ],
+      "locale": "fr"
+    },
+    "operations": {
+      "headings": [
+        "operations"
+      ],
+      "locale": "fr"
+    },
+    "overview": {
+      "headings": [
+        "getting-started",
+        "contextual-help",
+        "guides",
+        "languages-and-limits"
+      ],
+      "locale": "fr"
+    },
+    "reference-app-docs-agentguide-md": {
+      "headings": [],
+      "locale": "en"
+    },
+    "reference-app-docs-agentprompt-md": {
+      "headings": [],
+      "locale": "en"
+    },
+    "reference-app-licenses-json": {
+      "headings": [],
+      "locale": "en"
+    },
+    "reference-licences-apache-2-0-txt": {
+      "headings": [],
+      "locale": "en"
+    },
+    "reference-licences-cydoc-mit-txt": {
+      "headings": [],
+      "locale": "en"
+    },
+    "reference-licences-cytoolscore-mit-txt": {
+      "headings": [],
+      "locale": "en"
+    },
+    "reference-licences-cyui-mit-txt": {
+      "headings": [],
+      "locale": "en"
+    },
+    "reference-licences-sources-txt": {
+      "headings": [],
+      "locale": "en"
+    },
+    "reference-license": {
+      "headings": [],
+      "locale": "en"
+    },
+    "python-ensure-standalone-identity-ensure-standalone-identity": {
+      "headings": [
+        "signature",
+        "source"
+      ],
+      "locale": "fr"
+    },
+    "python-create-runtime-create-runtime": {
+      "headings": [
+        "signature",
+        "source"
+      ],
+      "locale": "fr"
+    },
+    "source-sources-tool-py": {
+      "headings": [
+        "symbols",
+        "dependencies",
+        "source"
+      ],
+      "locale": "fr"
+    },
+    "translation-report": {
+      "headings": [
+        "missing",
+        "outdated",
+        "untracked",
+        "tracking"
+      ],
+      "locale": "fr"
+    }
+  },
+  "modules": [
+    "image"
+  ]
+}

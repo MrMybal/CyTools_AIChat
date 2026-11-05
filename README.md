@@ -161,3 +161,8 @@ The Models tab asks for your acceptance before downloading.
 CyUI 1.2.0 provides the selected shared interface modules. See [integration and maintenance](app/Docs/CyUIMigration.md) for the module map, preserved application behavior and validation limits.
 
 CyUI: MIT ([upstream license](https://github.com/MrMybal/CyUI/blob/main/LICENSE)); the complete text is included in LICENCES/CyUI-MIT.txt.
+
+
+## Local documentation
+
+Open **Options → Open local manual (F1)** or press **F1** in the application. The complete offline reader is shipped in [`app/help/index.html`](app/help/index.html). [Regenerate the manual](app/documentation/README.md).

@@ -118,5 +118,12 @@
     "license": "MIT",
     "url": "https://huggingface.co/charactr/vocos-mel-24khz",
     "notes": ""
+  },
+  {
+    "kind": "Library",
+    "name": "CyDoc 0.1.0",
+    "license": "MIT",
+    "url": "https://github.com/MrMybal/CyDoc",
+    "notes": "Local documentation reader; full license in LICENCES/CyDoc-MIT.txt. Build dependencies are not required for reading."
   }
 ]

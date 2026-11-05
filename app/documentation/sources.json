@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "name": "CyTools_AIChat",
+  "documents": [
+    "LISEZ-MOI.md",
+    "README.md",
+    "app/Docs/Architecture.md",
+    "app/Docs/AutomaticInputs.md",
+    "app/Docs/CapabilityCoverage.md",
+    "app/Docs/CreatingYourFirstCyTool.md",
+    "app/Docs/CyUIMigration.md",
+    "app/Docs/Dependencies.md",
+    "app/Docs/Downloads.md",
+    "app/Docs/ErrorModel.md",
+    "app/Docs/Events.md",
+    "app/Docs/FullOperationAccess.md",
+    "app/Docs/GenerationConfigurations.md",
+    "app/Docs/ImplementationStatus.md",
+    "app/Docs/Index.md",
+    "app/Docs/Jobs.md",
+    "app/Docs/Licensing.md",
+    "app/Docs/Localization.md",
+    "app/Docs/MCP.md",
+    "app/Docs/MeshViewer.md",
+    "app/Docs/Models.md",
+    "app/Docs/MultiClient.md",
+    "app/Docs/Operations.md",
+    "app/Docs/Outputs.md",
+    "app/Docs/Overview.md",
+    "app/Docs/Parameters.md",
+    "app/Docs/Platforms.md",
+    "app/Docs/Protocol.md",
+    "app/Docs/Resources.md",
+    "app/Docs/Scheduler.md",
+    "app/Docs/SharedInstallation.md",
+    "app/Docs/StandaloneDelivery.md",
+    "app/Docs/StandaloneDiagnosticsAndModels.md",
+    "app/Docs/TaskFiles.md",
+    "app/Docs/ToolFinalization.md",
+    "app/Docs/ToolManifest.md",
+    "app/Docs/Transports.md",
+    "app/Docs/UnrealIntegration.md",
+    "app/Docs/UpdateExistingProducts.md",
+    "app/Docs/Validation.md",
+    "app/Docs/Versioning.md",
+    "app/Docs/Workers.md",
+    "app/README.md",
+    "app/documentation/README.md",
+    "app/documentation/VALIDATION.md"
+  ],
+  "productGuides": [
+    "Architecture.md",
+    "AutomaticInputs.md",
+    "CapabilityCoverage.md",
+    "CyUIMigration.md",
+    "FullOperationAccess.md",
+    "ImplementationStatus.md",
+    "Index.md",
+    "Licensing.md",
+    "MCP.md",
+    "Protocol.md",
+    "Scheduler.md",
+    "SharedInstallation.md",
+    "StandaloneDelivery.md",
+    "TaskFiles.md",
+    "ToolFinalization.md",
+    "ToolManifest.md",
+    "UnrealIntegration.md",
+    "UpdateExistingProducts.md",
+    "Validation.md",
+    "Versioning.md",
+    "Workers.md"
+  ],
+  "excluded": [
+    {
+      "source": "app/AGENTS.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/CyToolsGuide.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/Docs/AgentGuide.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/Docs/AgentPrompt.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    }
+  ]
+}

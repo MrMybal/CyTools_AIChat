@@ -153,3 +153,8 @@ Depuis les sources : récupérez la nouvelle version, puis lancez
 commande qui met le SDK à niveau. Depuis l'onglet **Mises à jour** : l'archive est
 vérifiée avant d'être activée, et *Restaurer la version précédente* remet l'application et
 les fichiers de licence d'avant. Dans les deux sens, `data/` n'est jamais touché.
+
+
+## Documentation locale
+
+Dans l’application, ouvrir **Options → Ouvrir le manuel local (F1)** ou appuyer sur **F1**. Le lecteur hors ligne complet est livré dans [`app/help/index.html`](app/help/index.html). [Régénérer le manuel](app/documentation/README.md).
