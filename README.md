@@ -1,5 +1,7 @@
 # CyTools_AIChat
 
+[Documentation](https://mrmybal.github.io/CyTools_AIChat/#/en/overview) · [Français](https://mrmybal.github.io/CyTools_AIChat/#/fr/overview)
+
 <p align="center">
   <img src="app/assets/branding/logo.png" alt="CyTools AIChat logo" width="160">
 </p>
@@ -165,4 +167,4 @@ CyUI: MIT ([upstream license](https://github.com/MrMybal/CyUI/blob/main/LICENSE)
 
 ## Local documentation
 
-Open **Options → Open local manual (F1)** or press **F1** in the application. The complete offline reader is shipped in [`app/help/index.html`](app/help/index.html). [Regenerate the manual](app/documentation/README.md).
+Open **Options → Open local manual (F1)** or press **F1** in the application. The complete offline reader is shipped in `app/help/index.html`. [Regenerate the manual](app/documentation/README.md).

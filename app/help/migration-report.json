@@ -5,13 +5,13 @@
       "source": "LISEZ-MOI.md",
       "id": "guide-lisez-moi",
       "locale": "fr",
-      "sha256": "36f7523a8ab39db80e6b06fcfe6650f1541bc89e274696aacfa22fc126c827cd"
+      "sha256": "37fd77196f8b8003849210cb71c54b4f16e6f1e7f54f336965ef74503094b2af"
     },
     {
       "source": "README.md",
       "id": "guide-readme",
       "locale": "en",
-      "sha256": "a32968efebb8328f75232231a235e33509bce29c84706fd114cdf077b19ad783"
+      "sha256": "00b99a4ab42f0b48cff15b80d456df68e062c36fd551f5aea5a0d510022cc7f2"
     },
     {
       "source": "app/Docs/Architecture.md",
@@ -257,13 +257,19 @@
       "source": "app/README.md",
       "id": "guide-app-readme",
       "locale": "en",
-      "sha256": "c734a2df9a9055cea2fc343a7f167b7edba96ce3b63206e00a702ae39626698b"
+      "sha256": "26375a0c4abcfca251e31f9dfcdcc03ea9a097af37bf8b07ad4af553a2573f2b"
+    },
+    {
+      "source": "app/documentation/PUBLISHING.md",
+      "id": "guide-app-documentation-publishing",
+      "locale": "en",
+      "sha256": "596df3c8337d0e99ca901d1941f7861bc97f0cf986ddd752bc98f3a6da6e7b4f"
     },
     {
       "source": "app/documentation/README.md",
       "id": "guide-app-documentation-readme",
       "locale": "en",
-      "sha256": "aebad11f76f73968b71d99a280f47c556fd97038915ae0992b784e5b205616da"
+      "sha256": "ebe06a316d2623f7b7bb9f3456e2bbd74d34c9c9a401c2553c6717eca1cd22e9"
     },
     {
       "source": "app/documentation/VALIDATION.md",

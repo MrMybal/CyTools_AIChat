@@ -1,5 +1,7 @@
 # CyTools_AIChat
 
+[Documentation](https://mrmybal.github.io/CyTools_AIChat/#/fr/overview) · [English](https://mrmybal.github.io/CyTools_AIChat/#/en/overview)
+
 Maintenance : **Cyberalien**.
 
 <p align="center">
@@ -157,4 +159,4 @@ les fichiers de licence d'avant. Dans les deux sens, `data/` n'est jamais touch�
 
 ## Documentation locale
 
-Dans l’application, ouvrir **Options → Ouvrir le manuel local (F1)** ou appuyer sur **F1**. Le lecteur hors ligne complet est livré dans [`app/help/index.html`](app/help/index.html). [Régénérer le manuel](app/documentation/README.md).
+Dans l’application, ouvrir **Options → Ouvrir le manuel local (F1)** ou appuyer sur **F1**. Le lecteur hors ligne complet est livré dans `app/help/index.html`. [Régénérer le manuel](app/documentation/README.md).

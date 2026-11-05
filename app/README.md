@@ -1,5 +1,7 @@
 # CyTools_AIChat — developer documentation
 
+[Documentation](https://mrmybal.github.io/CyTools_AIChat/#/en/guide-app-readme) · [Français](https://mrmybal.github.io/CyTools_AIChat/#/fr/overview)
+
 Maintenance : **Cyberalien**.
 
 A chat engine built on the CyToolsCore SDK. One runtime serves the desktop window, the CLI,

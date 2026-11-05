@@ -32,10 +32,16 @@
       "expectedRevision": "b47a5c670a315f1f"
     },
     {
+      "id": "guide-app-documentation-publishing",
+      "title": "Publishing the CyDoc reader",
+      "locale": "fr",
+      "expectedRevision": "f15d34c17c6c51b8"
+    },
+    {
       "id": "guide-app-documentation-readme",
       "title": "Local documentation (CyDoc)",
       "locale": "fr",
-      "expectedRevision": "7813cec244e6cdf6"
+      "expectedRevision": "0d4e58af93476547"
     },
     {
       "id": "guide-app-documentation-validation",
@@ -47,13 +53,13 @@
       "id": "guide-app-readme",
       "title": "CyTools_AIChat — developer documentation",
       "locale": "fr",
-      "expectedRevision": "54b2c22a351dd224"
+      "expectedRevision": "67d16f73f17f495f"
     },
     {
       "id": "guide-readme",
       "title": "CyTools_AIChat",
       "locale": "fr",
-      "expectedRevision": "2f2e2b4d176dfa72"
+      "expectedRevision": "adc698fe8e5c091d"
     },
     {
       "id": "licenses",

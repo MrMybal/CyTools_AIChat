@@ -8,3 +8,4 @@
 *.whl       binary
 *.gguf      binary
 *.ico binary
+.github export-ignore

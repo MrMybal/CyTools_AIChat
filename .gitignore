@@ -40,3 +40,6 @@ __pycache__/
 *.importing
 .vscode/
 .idea/
+/_site/
+/_site.previous/
+/_pages-stage-*/
