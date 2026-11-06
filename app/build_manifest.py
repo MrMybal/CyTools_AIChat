@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 APP = Path(__file__).resolve().parent
-VERSION = '0.2.1'
+VERSION = '0.2.2'
 
 PROVIDERS = [
     ('codex', 'Codex (agent CLI, your ChatGPT sign-in)'),

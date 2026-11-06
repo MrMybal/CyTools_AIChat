@@ -1,0 +1,4034 @@
+# CyTools_AIChat — application integration
+
+Use the installed private Python interpreter and `app/tool.py`. CLI inspection: `describe`, `list-operations`, and `describe-operation OPERATION_ID`; MCP: `mcp`. File inputs accept readable absolute paths and are automatically imported into the task. Export wanted outputs before finishing a temporary task. Never accept a model licence or file modification confirmation for the user.
+
+## Public operation contracts
+
+```json
+[
+  {
+    "id": "chat",
+    "name": "Chat",
+    "description": "Send one message and store the reply in a conversation.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "The message to send.",
+          "x-cy-kind": "MultilineString"
+        },
+        "conversation": {
+          "type": "string",
+          "description": "Conversation id to continue. Empty starts a new conversation and returns its id.",
+          "default": ""
+        },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "",
+            "codex",
+            "claude-code",
+            "antigravity",
+            "opencode",
+            "codebuddy",
+            "command-code",
+            "devin",
+            "openai",
+            "openrouter",
+            "openai-compatible",
+            "anthropic",
+            "ollama",
+            "llamacpp"
+          ],
+          "default": "",
+          "description": "Provider to talk to. Empty reuses the one stored in the conversation."
+        },
+        "transport": {
+          "type": "string",
+          "enum": [
+            "",
+            "app-server",
+            "cli-jsonl",
+            "chat-completions",
+            "messages",
+            "native",
+            "local-server"
+          ],
+          "default": "",
+          "description": "Transport within the provider. Empty uses its default."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model identifier for the provider. Empty reuses the conversation model.",
+          "default": ""
+        },
+        "system_prompt": {
+          "type": "string",
+          "description": "System prompt for this conversation. A session provider that has no system field receives it folded into the first message, and the reply reports that.",
+          "default": "",
+          "x-cy-kind": "MultilineString"
+        },
+        "preset": {
+          "type": "string",
+          "description": "Preset id whose system prompt and sampling values fill anything not set explicitly.",
+          "default": ""
+        },
+        "engine": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "cpu",
+            "cuda"
+          ],
+          "default": "auto",
+          "description": "llama.cpp build for the local provider. auto prefers an installed CUDA build."
+        },
+        "threads": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256,
+          "default": 0,
+          "description": "CPU threads for the local provider. 0 lets llama.cpp decide."
+        },
+        "keep_loaded": {
+          "type": "boolean",
+          "default": true,
+          "description": "Keep the local model resident after the reply so the next turn starts immediately."
+        },
+        "reasoning_effort": {
+          "type": "string",
+          "enum": [
+            "",
+            "default",
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "default": "",
+          "description": "How much a reasoning model should think before answering. Empty uses the value the catalogue records for that model. \"none\" turns thinking off through the chat template; the other levels are passed to llama.cpp. Local provider only."
+        },
+        "settings": {
+          "type": "object",
+          "default": {},
+          "description": "Extra provider fields merged into the request, for options this schema does not name."
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Sampling temperature. Higher is more varied. Left unset, the provider default applies."
+        },
+        "top_p": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Nucleus sampling threshold."
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "Keep only the K most likely tokens. Ignored by providers that do not expose it."
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 131072,
+          "description": "Maximum tokens in the reply."
+        },
+        "repeat_penalty": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "description": "Penalty applied to repeated tokens. Local and Ollama providers only."
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "description": "Sampling seed. -1 leaves it to the provider. The same seed only reproduces a reply with the same weights and runtime."
+        },
+        "context_tokens": {
+          "type": "integer",
+          "minimum": 512,
+          "maximum": 1048576,
+          "description": "Context window requested when loading a local model. Changing it restarts the local server."
+        },
+        "history_limit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "Send only the last N stored messages to a stateless provider. 0 sends the whole conversation. A session provider keeps its own history and ignores this."
+        },
+        "model_profile": {
+          "type": "string",
+          "default": "",
+          "description": "ID from the local model library; empty uses the selected built-in model."
+        },
+        "loras": {
+          "type": "array",
+          "maxItems": 8,
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "strength"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "strength": {
+                "type": "number",
+                "minimum": -4,
+                "maximum": 4
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "conversationId": {
+          "type": "string",
+          "description": "Conversation the reply was stored in."
+        },
+        "messageId": {
+          "type": "string",
+          "description": "Identifier of the stored assistant message."
+        },
+        "text": {
+          "type": "string",
+          "description": "The reply text."
+        },
+        "providerId": {
+          "type": "string",
+          "description": "Provider that produced the reply."
+        },
+        "transport": {
+          "type": "string",
+          "description": "Transport used."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model reported by the provider."
+        },
+        "kind": {
+          "type": "string",
+          "description": "stateless when the transcript is the context, session when the provider keeps the history."
+        },
+        "usage": {
+          "type": "object",
+          "description": "Token accounting as reported by the provider, when it reports any."
+        },
+        "seconds": {
+          "type": "number",
+          "description": "Wall-clock duration of the turn."
+        },
+        "nativeSessionId": {
+          "type": "string",
+          "description": "Provider-side session identifier, when the provider has one."
+        },
+        "thinkingCharacters": {
+          "type": "integer",
+          "description": "Characters of reasoning text streamed but not stored in the reply."
+        },
+        "file": {
+          "type": "string",
+          "description": "Markdown file holding the reply inside the job workspace.",
+          "x-cy-kind": "File"
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type of the reply file."
+        }
+      },
+      "required": [
+        "conversationId",
+        "messageId",
+        "text",
+        "providerId",
+        "transport",
+        "model",
+        "kind",
+        "usage",
+        "seconds",
+        "nativeSessionId",
+        "thinkingCharacters",
+        "file",
+        "mimeType"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "conversationId",
+        "type": "Value",
+        "description": "Conversation the reply was stored in."
+      },
+      {
+        "id": "messageId",
+        "type": "Value",
+        "description": "Identifier of the stored assistant message."
+      },
+      {
+        "id": "text",
+        "type": "Value",
+        "description": "The reply text."
+      },
+      {
+        "id": "providerId",
+        "type": "Value",
+        "description": "Provider that produced the reply."
+      },
+      {
+        "id": "transport",
+        "type": "Value",
+        "description": "Transport used."
+      },
+      {
+        "id": "model",
+        "type": "Value",
+        "description": "Model reported by the provider."
+      },
+      {
+        "id": "kind",
+        "type": "Value",
+        "description": "stateless when the transcript is the context, session when the provider keeps the history."
+      },
+      {
+        "id": "usage",
+        "type": "Object",
+        "description": "Token accounting as reported by the provider, when it reports any."
+      },
+      {
+        "id": "seconds",
+        "type": "Value",
+        "description": "Wall-clock duration of the turn."
+      },
+      {
+        "id": "nativeSessionId",
+        "type": "Value",
+        "description": "Provider-side session identifier, when the provider has one."
+      },
+      {
+        "id": "thinkingCharacters",
+        "type": "Value",
+        "description": "Characters of reasoning text streamed but not stored in the reply."
+      },
+      {
+        "id": "file",
+        "type": "File",
+        "description": "Markdown file holding the reply inside the job workspace."
+      },
+      {
+        "id": "mimeType",
+        "type": "Value",
+        "description": "MIME type of the reply file."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 536870912,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "network",
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true
+  },
+  {
+    "id": "list_providers",
+    "name": "List providers",
+    "description": "Inventory every provider with its transports and what was actually detected on this machine.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Limit the report to one provider.",
+          "default": ""
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "One report per provider."
+        }
+      },
+      "required": [
+        "providers"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "providers",
+        "type": "Value",
+        "description": "One report per provider."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "network",
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "list_provider_models",
+    "name": "List provider models",
+    "description": "Ask a provider for the models it offers. Not every provider publishes a catalogue.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Provider id."
+        },
+        "transport": {
+          "type": "string",
+          "enum": [
+            "",
+            "app-server",
+            "cli-jsonl",
+            "chat-completions",
+            "messages",
+            "native",
+            "local-server"
+          ],
+          "default": ""
+        }
+      },
+      "required": [
+        "provider"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Model rows."
+        },
+        "providerId": {
+          "type": "string",
+          "description": "Provider queried."
+        }
+      },
+      "required": [
+        "models",
+        "providerId"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "models",
+        "type": "Value",
+        "description": "Model rows."
+      },
+      {
+        "id": "providerId",
+        "type": "Value",
+        "description": "Provider queried."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "network",
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "conversation_list",
+    "name": "List conversations",
+    "description": "Every stored conversation, most recent first.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "conversations": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Conversation summaries."
+        }
+      },
+      "required": [
+        "conversations"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "conversations",
+        "type": "Value",
+        "description": "Conversation summaries."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "conversation_read",
+    "name": "Read a conversation",
+    "description": "The full stored transcript of one conversation.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "conversation": {
+          "type": "string",
+          "description": "Conversation id."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 0,
+          "description": "Return only the last N messages. 0 returns all of them."
+        }
+      },
+      "required": [
+        "conversation"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "conversation": {
+          "type": "object",
+          "description": "The stored document."
+        }
+      },
+      "required": [
+        "conversation"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "conversation",
+        "type": "Object",
+        "description": "The stored document."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "conversation_create",
+    "name": "Create a conversation",
+    "description": "Start an empty conversation and return its id.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title. Empty derives one from the first message.",
+          "default": ""
+        },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "",
+            "codex",
+            "claude-code",
+            "antigravity",
+            "opencode",
+            "codebuddy",
+            "command-code",
+            "devin",
+            "openai",
+            "openrouter",
+            "openai-compatible",
+            "anthropic",
+            "ollama",
+            "llamacpp"
+          ],
+          "default": ""
+        },
+        "transport": {
+          "type": "string",
+          "enum": [
+            "",
+            "app-server",
+            "cli-jsonl",
+            "chat-completions",
+            "messages",
+            "native",
+            "local-server"
+          ],
+          "default": ""
+        },
+        "model": {
+          "type": "string",
+          "description": "Model identifier.",
+          "default": ""
+        },
+        "system_prompt": {
+          "type": "string",
+          "description": "System prompt.",
+          "default": "",
+          "x-cy-kind": "MultilineString"
+        },
+        "preset": {
+          "type": "string",
+          "description": "Preset id to start from.",
+          "default": ""
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "conversation": {
+          "type": "object",
+          "description": "The created document."
+        }
+      },
+      "required": [
+        "conversation"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "conversation",
+        "type": "Object",
+        "description": "The created document."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "conversation_delete",
+    "name": "Delete a conversation",
+    "description": "Move a conversation out of the active list. The document is kept as a timestamped backup.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "conversation": {
+          "type": "string",
+          "description": "Conversation id."
+        }
+      },
+      "required": [
+        "conversation"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Conversation id."
+        },
+        "deleted": {
+          "type": "boolean"
+        },
+        "backup": {
+          "type": "string",
+          "description": "Where the document was moved."
+        }
+      },
+      "required": [
+        "id",
+        "deleted",
+        "backup"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "id",
+        "type": "Value",
+        "description": "Conversation id."
+      },
+      {
+        "id": "deleted",
+        "type": "Value",
+        "description": "deleted"
+      },
+      {
+        "id": "backup",
+        "type": "Value",
+        "description": "Where the document was moved."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "conversation_export",
+    "name": "Export a conversation",
+    "description": "Write a conversation to a file.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "conversation": {
+          "type": "string",
+          "description": "Conversation id."
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "markdown",
+            "json"
+          ],
+          "default": "markdown"
+        },
+        "destination": {
+          "type": "string",
+          "description": "Absolute path to write to. Empty writes into data/exports.",
+          "default": ""
+        }
+      },
+      "required": [
+        "conversation"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "The written file.",
+          "x-cy-kind": "File"
+        },
+        "format": {
+          "type": "string",
+          "description": "Format written."
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type."
+        }
+      },
+      "required": [
+        "file",
+        "format",
+        "mimeType"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "file",
+        "type": "File",
+        "description": "The written file."
+      },
+      {
+        "id": "format",
+        "type": "Value",
+        "description": "Format written."
+      },
+      {
+        "id": "mimeType",
+        "type": "Value",
+        "description": "MIME type."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "filesystemExternal"
+    ],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "conversation_reset_session",
+    "name": "Forget the provider session",
+    "description": "Drop the provider-side session so the next turn starts a fresh one. The stored transcript is kept.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "conversation": {
+          "type": "string",
+          "description": "Conversation id."
+        },
+        "provider": {
+          "type": "string",
+          "description": "Limit to one provider. Empty forgets every session of the conversation.",
+          "default": ""
+        },
+        "transport": {
+          "type": "string",
+          "enum": [
+            "",
+            "app-server",
+            "cli-jsonl",
+            "chat-completions",
+            "messages",
+            "native",
+            "local-server"
+          ],
+          "default": ""
+        }
+      },
+      "required": [
+        "conversation"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "conversation": {
+          "type": "object",
+          "description": "The updated document."
+        }
+      },
+      "required": [
+        "conversation"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "conversation",
+        "type": "Object",
+        "description": "The updated document."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "preset_list",
+    "name": "List presets",
+    "description": "Presets shipped with the application and those you saved.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "presets": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Preset documents."
+        }
+      },
+      "required": [
+        "presets"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "presets",
+        "type": "Value",
+        "description": "Preset documents."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "preset_save",
+    "name": "Save a preset",
+    "description": "Create or replace a preset. Secrets are never part of a preset.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Preset id. Empty mints one.",
+          "default": ""
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name."
+        },
+        "description": {
+          "type": "string",
+          "description": "What this preset is for.",
+          "default": ""
+        },
+        "system_prompt": {
+          "type": "string",
+          "description": "System prompt.",
+          "default": "",
+          "x-cy-kind": "MultilineString"
+        },
+        "settings": {
+          "type": "object",
+          "default": {},
+          "description": "Sampling values: context_tokens, history_limit, max_tokens, repeat_penalty, seed, temperature, top_k, top_p"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "preset": {
+          "type": "object",
+          "description": "The stored preset."
+        }
+      },
+      "required": [
+        "preset"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "preset",
+        "type": "Object",
+        "description": "The stored preset."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "preset_delete",
+    "name": "Delete a preset",
+    "description": "Remove a preset you saved.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Preset id."
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Preset id."
+        },
+        "deleted": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "deleted"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "id",
+        "type": "Value",
+        "description": "Preset id."
+      },
+      {
+        "id": "deleted",
+        "type": "Value",
+        "description": "deleted"
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "model_list",
+    "name": "List local weights",
+    "description": "Catalogue of downloadable GGUF models, LoRA adapters and speech models with their installation state.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "",
+            "model",
+            "lora",
+            "stt",
+            "tts"
+          ],
+          "default": "",
+          "description": "model and lora are chat weights; stt and tts are speech models."
+        },
+        "verify": {
+          "type": "boolean",
+          "default": false,
+          "description": "Re-hash installed files. Slow on large weights."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Catalogue rows."
+        }
+      },
+      "required": [
+        "models"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "models",
+        "type": "Value",
+        "description": "Catalogue rows."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": false
+  },
+  {
+    "id": "model_install",
+    "name": "Install local weights",
+    "description": "Download and verify a catalogue entry. Resumes an interrupted download.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Catalogue entry id."
+        },
+        "accept_license": {
+          "type": "boolean",
+          "default": false,
+          "description": "Confirms you accepted the licence on the provider page yourself."
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Entry id."
+        },
+        "installed": {
+          "type": "boolean"
+        },
+        "sizeBytes": {
+          "type": "integer"
+        },
+        "presentBytes": {
+          "type": "integer"
+        },
+        "kind": {
+          "type": "string",
+          "description": "model or lora"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name."
+        },
+        "license": {
+          "type": "string",
+          "description": "Declared licence."
+        },
+        "source": {
+          "type": "string",
+          "description": "Model page."
+        },
+        "repository": {
+          "type": "string",
+          "description": "Repository."
+        },
+        "revision": {
+          "type": "string",
+          "description": "Pinned revision."
+        },
+        "gated": {
+          "type": "boolean"
+        },
+        "licenseAccepted": {
+          "type": "boolean"
+        },
+        "baseModel": {
+          "type": "string",
+          "description": "Base model id, for an adapter."
+        },
+        "architecture": {
+          "type": "string",
+          "description": "Declared architecture."
+        },
+        "contextTokens": {
+          "type": "integer"
+        },
+        "ramGiB": {
+          "type": "integer"
+        },
+        "vramGiB": {
+          "type": "integer"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Notes."
+        },
+        "path": {
+          "type": "string",
+          "description": "Installed file path; the folder, for a speech model."
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Languages of a speech model."
+        },
+        "family": {
+          "type": "string",
+          "description": "Engine family of a speech model."
+        },
+        "component": {
+          "type": "boolean",
+          "description": "Installed for another model, not chosen directly."
+        }
+      },
+      "required": [
+        "id",
+        "installed",
+        "sizeBytes",
+        "presentBytes",
+        "kind",
+        "name",
+        "license",
+        "source",
+        "repository",
+        "revision",
+        "gated",
+        "licenseAccepted",
+        "baseModel",
+        "architecture",
+        "contextTokens",
+        "ramGiB",
+        "vramGiB",
+        "notes",
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "id",
+        "type": "Value",
+        "description": "Entry id."
+      },
+      {
+        "id": "installed",
+        "type": "Value",
+        "description": "installed"
+      },
+      {
+        "id": "sizeBytes",
+        "type": "Value",
+        "description": "sizeBytes"
+      },
+      {
+        "id": "presentBytes",
+        "type": "Value",
+        "description": "presentBytes"
+      },
+      {
+        "id": "kind",
+        "type": "Value",
+        "description": "model or lora"
+      },
+      {
+        "id": "name",
+        "type": "Value",
+        "description": "Display name."
+      },
+      {
+        "id": "license",
+        "type": "Value",
+        "description": "Declared licence."
+      },
+      {
+        "id": "source",
+        "type": "Value",
+        "description": "Model page."
+      },
+      {
+        "id": "repository",
+        "type": "Value",
+        "description": "Repository."
+      },
+      {
+        "id": "revision",
+        "type": "Value",
+        "description": "Pinned revision."
+      },
+      {
+        "id": "gated",
+        "type": "Value",
+        "description": "gated"
+      },
+      {
+        "id": "licenseAccepted",
+        "type": "Value",
+        "description": "licenseAccepted"
+      },
+      {
+        "id": "baseModel",
+        "type": "Value",
+        "description": "Base model id, for an adapter."
+      },
+      {
+        "id": "architecture",
+        "type": "Value",
+        "description": "Declared architecture."
+      },
+      {
+        "id": "contextTokens",
+        "type": "Value",
+        "description": "contextTokens"
+      },
+      {
+        "id": "ramGiB",
+        "type": "Value",
+        "description": "ramGiB"
+      },
+      {
+        "id": "vramGiB",
+        "type": "Value",
+        "description": "vramGiB"
+      },
+      {
+        "id": "notes",
+        "type": "Value",
+        "description": "Notes."
+      },
+      {
+        "id": "path",
+        "type": "Value",
+        "description": "Installed file path; the folder, for a speech model."
+      },
+      {
+        "id": "languages",
+        "type": "Value",
+        "description": "Languages of a speech model."
+      },
+      {
+        "id": "family",
+        "type": "Value",
+        "description": "Engine family of a speech model."
+      },
+      {
+        "id": "component",
+        "type": "Value",
+        "description": "Installed for another model, not chosen directly."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "network"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "model-files"
+    ]
+  },
+  {
+    "id": "model_repair",
+    "name": "Repair local weights",
+    "description": "Re-verify an entry and delete only the files whose digest does not match.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Catalogue entry id."
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Entry id."
+        },
+        "removedFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "installed": {
+          "type": "boolean"
+        },
+        "repaired": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "removedFiles",
+        "installed",
+        "repaired"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "id",
+        "type": "Value",
+        "description": "Entry id."
+      },
+      {
+        "id": "removedFiles",
+        "type": "Value",
+        "description": "removedFiles"
+      },
+      {
+        "id": "installed",
+        "type": "Value",
+        "description": "installed"
+      },
+      {
+        "id": "repaired",
+        "type": "Value",
+        "description": "repaired"
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": false,
+    "exclusiveGroups": [
+      "model-files"
+    ]
+  },
+  {
+    "id": "model_uninstall",
+    "name": "Remove local weights",
+    "description": "Delete the files of a catalogue entry.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Catalogue entry id."
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Entry id."
+        },
+        "removedFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "installed": {
+          "type": "boolean"
+        },
+        "libraryReferencesRemoved": {
+          "type": "integer",
+          "description": "Model library references dropped with the files."
+        }
+      },
+      "required": [
+        "id",
+        "removedFiles",
+        "installed",
+        "libraryReferencesRemoved"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "id",
+        "type": "Value",
+        "description": "Entry id."
+      },
+      {
+        "id": "removedFiles",
+        "type": "Value",
+        "description": "removedFiles"
+      },
+      {
+        "id": "installed",
+        "type": "Value",
+        "description": "installed"
+      },
+      {
+        "id": "libraryReferencesRemoved",
+        "type": "Value",
+        "description": "Model library references dropped with the files."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": [
+      "model-files"
+    ]
+  },
+  {
+    "id": "engine_list",
+    "name": "List llama.cpp engines",
+    "description": "The pinned llama.cpp builds and which one is installed.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "release": {
+          "type": "string",
+          "description": "Pinned release tag."
+        },
+        "repository": {
+          "type": "string",
+          "description": "Source repository."
+        },
+        "builds": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "notes": {
+          "type": "string",
+          "description": "Notes."
+        }
+      },
+      "required": [
+        "release",
+        "repository",
+        "builds",
+        "notes"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "release",
+        "type": "Value",
+        "description": "Pinned release tag."
+      },
+      {
+        "id": "repository",
+        "type": "Value",
+        "description": "Source repository."
+      },
+      {
+        "id": "builds",
+        "type": "Value",
+        "description": "builds"
+      },
+      {
+        "id": "notes",
+        "type": "Value",
+        "description": "Notes."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "engine_install",
+    "name": "Install a llama.cpp engine",
+    "description": "Download, verify and unpack a pinned llama.cpp build into runtime/engines.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "string",
+          "enum": [
+            "cpu",
+            "cuda"
+          ],
+          "default": "cpu"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Build id."
+        },
+        "name": {
+          "type": "string",
+          "description": "Build name."
+        },
+        "installed": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "string",
+          "description": "Server executable."
+        },
+        "version": {
+          "type": "string",
+          "description": "Release tag."
+        },
+        "release": {
+          "type": "string",
+          "description": "Pinned release."
+        },
+        "device": {
+          "type": "string",
+          "description": "cpu or cuda."
+        },
+        "platform": {
+          "type": "string",
+          "description": "Target platform."
+        },
+        "sizeBytes": {
+          "type": "integer"
+        },
+        "license": {
+          "type": "string",
+          "description": "Licence."
+        },
+        "source": {
+          "type": "string",
+          "description": "Release page."
+        },
+        "devices": {
+          "type": "string",
+          "description": "Device probe output, for CUDA."
+        },
+        "requires": {
+          "type": "string",
+          "description": "What this build needs."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "installed",
+        "path",
+        "version",
+        "release",
+        "device",
+        "platform",
+        "sizeBytes",
+        "license",
+        "source",
+        "devices",
+        "requires"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "id",
+        "type": "Value",
+        "description": "Build id."
+      },
+      {
+        "id": "name",
+        "type": "Value",
+        "description": "Build name."
+      },
+      {
+        "id": "installed",
+        "type": "Value",
+        "description": "installed"
+      },
+      {
+        "id": "path",
+        "type": "Value",
+        "description": "Server executable."
+      },
+      {
+        "id": "version",
+        "type": "Value",
+        "description": "Release tag."
+      },
+      {
+        "id": "release",
+        "type": "Value",
+        "description": "Pinned release."
+      },
+      {
+        "id": "device",
+        "type": "Value",
+        "description": "cpu or cuda."
+      },
+      {
+        "id": "platform",
+        "type": "Value",
+        "description": "Target platform."
+      },
+      {
+        "id": "sizeBytes",
+        "type": "Value",
+        "description": "sizeBytes"
+      },
+      {
+        "id": "license",
+        "type": "Value",
+        "description": "Licence."
+      },
+      {
+        "id": "source",
+        "type": "Value",
+        "description": "Release page."
+      },
+      {
+        "id": "devices",
+        "type": "Value",
+        "description": "Device probe output, for CUDA."
+      },
+      {
+        "id": "requires",
+        "type": "Value",
+        "description": "What this build needs."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "network",
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "engine-files"
+    ]
+  },
+  {
+    "id": "engine_remove",
+    "name": "Remove a llama.cpp engine",
+    "description": "Delete a build this Tool installed.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "string",
+          "enum": [
+            "cpu",
+            "cuda"
+          ]
+        }
+      },
+      "required": [
+        "build"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Build id."
+        },
+        "removed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "removed"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "id",
+        "type": "Value",
+        "description": "Build id."
+      },
+      {
+        "id": "removed",
+        "type": "Value",
+        "description": "removed"
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": [
+      "engine-files"
+    ]
+  },
+  {
+    "id": "speech_status",
+    "name": "Speech status",
+    "description": "The two speech environments, the speech models with their installation state, the running speech workers and the speech settings.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "engines": {
+          "type": "object",
+          "description": "stt and tts environments."
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Speech catalogue rows (kinds stt and tts)."
+        },
+        "workers": {
+          "type": "object",
+          "description": "Running speech workers."
+        },
+        "settings": {
+          "type": "object",
+          "description": "Speech settings."
+        }
+      },
+      "required": [
+        "engines",
+        "models",
+        "workers",
+        "settings"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "engines",
+        "type": "Object",
+        "description": "stt and tts environments."
+      },
+      {
+        "id": "models",
+        "type": "Value",
+        "description": "Speech catalogue rows (kinds stt and tts)."
+      },
+      {
+        "id": "workers",
+        "type": "Object",
+        "description": "Running speech workers."
+      },
+      {
+        "id": "settings",
+        "type": "Object",
+        "description": "Speech settings."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "speech_engine_install",
+    "name": "Install a speech environment",
+    "description": "Create or repair a private Python environment for speech under runtime/engines: stt (PyTorch CPU and transformers 5, for Phonon-2 and Parakeet) or tts (PyTorch CUDA 12.8 or CPU, XTTS-v2 and F5-TTS). Downloads several gigabytes from PyPI and the PyTorch index. Speech models and voices in data/ are not touched.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "enum": [
+            "stt",
+            "tts"
+          ]
+        },
+        "device": {
+          "type": "string",
+          "enum": [
+            "cuda",
+            "cpu"
+          ],
+          "default": "cuda",
+          "description": "PyTorch build for the tts environment. stt always uses the CPU."
+        }
+      },
+      "required": [
+        "engine"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "description": "Environment."
+        },
+        "label": {
+          "type": "string",
+          "description": "Description."
+        },
+        "directory": {
+          "type": "string",
+          "description": "Folder."
+        },
+        "installed": {
+          "type": "boolean"
+        },
+        "families": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "estimatedBytes": {
+          "type": "integer"
+        },
+        "cuda": {
+          "type": "boolean"
+        },
+        "cpuOnly": {
+          "type": "boolean"
+        },
+        "device": {
+          "type": "string",
+          "description": "Device found."
+        },
+        "torch": {
+          "type": "string",
+          "description": "PyTorch version."
+        },
+        "installedAt": {
+          "type": "string",
+          "description": "Date."
+        }
+      },
+      "required": [
+        "engine",
+        "label",
+        "directory",
+        "installed",
+        "families",
+        "estimatedBytes",
+        "cuda",
+        "cpuOnly",
+        "device",
+        "torch",
+        "installedAt"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "engine",
+        "type": "Value",
+        "description": "Environment."
+      },
+      {
+        "id": "label",
+        "type": "Value",
+        "description": "Description."
+      },
+      {
+        "id": "directory",
+        "type": "Value",
+        "description": "Folder."
+      },
+      {
+        "id": "installed",
+        "type": "Value",
+        "description": "installed"
+      },
+      {
+        "id": "families",
+        "type": "Value",
+        "description": "families"
+      },
+      {
+        "id": "estimatedBytes",
+        "type": "Value",
+        "description": "estimatedBytes"
+      },
+      {
+        "id": "cuda",
+        "type": "Value",
+        "description": "cuda"
+      },
+      {
+        "id": "cpuOnly",
+        "type": "Value",
+        "description": "cpuOnly"
+      },
+      {
+        "id": "device",
+        "type": "Value",
+        "description": "Device found."
+      },
+      {
+        "id": "torch",
+        "type": "Value",
+        "description": "PyTorch version."
+      },
+      {
+        "id": "installedAt",
+        "type": "Value",
+        "description": "Date."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "network",
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "stt-engine",
+      "tts-engine"
+    ]
+  },
+  {
+    "id": "speech_engine_remove",
+    "name": "Remove a speech environment",
+    "description": "Delete runtime/engines/stt or runtime/engines/tts. Models and voices stay.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "enum": [
+            "stt",
+            "tts"
+          ]
+        }
+      },
+      "required": [
+        "engine"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "description": "Environment."
+        },
+        "removed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "engine",
+        "removed"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "engine",
+        "type": "Value",
+        "description": "Environment."
+      },
+      {
+        "id": "removed",
+        "type": "Value",
+        "description": "removed"
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": [
+      "stt-engine",
+      "tts-engine"
+    ]
+  },
+  {
+    "id": "speech_settings",
+    "name": "Speech settings",
+    "description": "Read or change the speech preferences. A field left out keeps its value.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stt_model": {
+          "type": "string",
+          "description": "Speech-to-text model id. Empty picks the best installed one."
+        },
+        "tts_model": {
+          "type": "string",
+          "description": "Voice model id. Empty picks an installed one that speaks the language."
+        },
+        "voice": {
+          "type": "string",
+          "description": "Voice id (voice_list). Empty picks a default for the model."
+        },
+        "language": {
+          "type": "string",
+          "description": "auto, or a code such as fr or en."
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 2.0
+        },
+        "tts_device": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "cuda",
+            "cpu"
+          ]
+        },
+        "auto_read": {
+          "type": "boolean",
+          "description": "Read new replies aloud in the window."
+        },
+        "live_dictation": {
+          "type": "boolean",
+          "description": "Show the words in the window while you speak."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "settings": {
+          "type": "object",
+          "description": "The stored settings."
+        }
+      },
+      "required": [
+        "settings"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "settings",
+        "type": "Object",
+        "description": "The stored settings."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "transcribe",
+    "name": "Transcribe speech",
+    "description": "Speech to text with Phonon-2 (English) or Parakeet TDT 0.6B v3 (25 languages, French included), on the CPU. The model stays loaded for the next request.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "audio": {
+          "type": "string",
+          "description": "Audio file: an absolute path anywhere on this machine, or a name inside data/inputs. WAV, FLAC, OGG or MP3. It is copied for the job and the original is left untouched.",
+          "x-cy-kind": "File"
+        },
+        "model": {
+          "type": "string",
+          "description": "Speech-to-text model id. Empty uses the settings, then the best installed model for the language.",
+          "default": ""
+        },
+        "language": {
+          "type": "string",
+          "description": "Expected language, used only to choose the model: en prefers Phonon-2. The models detect the language themselves.",
+          "default": ""
+        }
+      },
+      "required": [
+        "audio"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "What was said."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model used."
+        },
+        "audioSeconds": {
+          "type": "number"
+        },
+        "seconds": {
+          "type": "number"
+        },
+        "loadSeconds": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "text",
+        "model",
+        "audioSeconds",
+        "seconds",
+        "loadSeconds"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "text",
+        "type": "Value",
+        "description": "What was said."
+      },
+      {
+        "id": "model",
+        "type": "Value",
+        "description": "Model used."
+      },
+      {
+        "id": "audioSeconds",
+        "type": "Value",
+        "description": "audioSeconds"
+      },
+      {
+        "id": "seconds",
+        "type": "Value",
+        "description": "seconds"
+      },
+      {
+        "id": "loadSeconds",
+        "type": "Value",
+        "description": "loadSeconds"
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "stt-engine"
+    ]
+  },
+  {
+    "id": "transcribe_live",
+    "name": "Transcribe while recording",
+    "description": "Follow a recording the desktop window is writing (data/inputs/dictation/live-<id>.pcm, 16-bit mono PCM) and publish DictationPartial events with the text so far, about every half second of new speech. Sentences are closed at pauses and their words become final; the sentence being spoken may still change. The job ends when the window creates <name>.done and returns the whole text. Meant for the window; give a file to transcribe instead.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "string",
+          "description": "Name of the live recording in data/inputs/dictation."
+        },
+        "rate": {
+          "type": "integer",
+          "minimum": 8000,
+          "maximum": 192000,
+          "description": "Sample rate of the recording."
+        },
+        "model": {
+          "type": "string",
+          "description": "Speech-to-text model id. Empty uses the settings.",
+          "default": ""
+        },
+        "language": {
+          "type": "string",
+          "description": "Expected language, used only to choose the model.",
+          "default": ""
+        },
+        "max_seconds": {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 3600,
+          "default": 600
+        }
+      },
+      "required": [
+        "stream",
+        "rate"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Everything that was said."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model used."
+        },
+        "audioSeconds": {
+          "type": "number"
+        },
+        "passes": {
+          "type": "integer"
+        },
+        "seconds": {
+          "type": "number"
+        },
+        "loadSeconds": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "text",
+        "model",
+        "audioSeconds",
+        "passes",
+        "seconds",
+        "loadSeconds"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "text",
+        "type": "Value",
+        "description": "Everything that was said."
+      },
+      {
+        "id": "model",
+        "type": "Value",
+        "description": "Model used."
+      },
+      {
+        "id": "audioSeconds",
+        "type": "Value",
+        "description": "audioSeconds"
+      },
+      {
+        "id": "passes",
+        "type": "Value",
+        "description": "passes"
+      },
+      {
+        "id": "seconds",
+        "type": "Value",
+        "description": "seconds"
+      },
+      {
+        "id": "loadSeconds",
+        "type": "Value",
+        "description": "loadSeconds"
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "stt-engine"
+    ]
+  },
+  {
+    "id": "speak",
+    "name": "Read text aloud",
+    "description": "Text to speech with XTTS-v2 or F5-TTS. Give a text, or a conversation and one of its messages to read a stored reply. The audio of a stored reply is kept in data/speech and reused when the same reply is read again with the same voice.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Text to read. Ignored when conversation and message are given.",
+          "default": "",
+          "x-cy-kind": "MultilineString"
+        },
+        "conversation": {
+          "type": "string",
+          "description": "Conversation id, to read one of its messages.",
+          "default": ""
+        },
+        "message": {
+          "type": "string",
+          "description": "Message id within that conversation.",
+          "default": ""
+        },
+        "model": {
+          "type": "string",
+          "description": "Voice model id. Empty uses the settings.",
+          "default": ""
+        },
+        "voice": {
+          "type": "string",
+          "description": "Voice id from voice_list. Empty uses the settings, then a default.",
+          "default": ""
+        },
+        "language": {
+          "type": "string",
+          "description": "auto, or a code such as fr or en. Empty uses the settings.",
+          "default": ""
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 2.0,
+          "description": "Speaking rate. Empty uses the settings."
+        },
+        "device": {
+          "type": "string",
+          "enum": [
+            "",
+            "auto",
+            "cuda",
+            "cpu"
+          ],
+          "default": ""
+        },
+        "progressive": {
+          "type": "boolean",
+          "default": false,
+          "description": "Publish a SpeechPiece event with a WAV file for each sentence as soon as it is made, so playback can start before the whole text is ready. The pieces are written to data/speech/pieces; whoever plays them deletes them. Cancelling stops after the current sentence."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "audio": {
+          "type": "string",
+          "description": "WAV file (16-bit PCM).",
+          "x-cy-kind": "File"
+        },
+        "durationSeconds": {
+          "type": "number"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model used."
+        },
+        "voice": {
+          "type": "string",
+          "description": "Voice id used."
+        },
+        "voiceName": {
+          "type": "string",
+          "description": "Voice name."
+        },
+        "language": {
+          "type": "string",
+          "description": "Language spoken."
+        },
+        "cached": {
+          "type": "boolean",
+          "description": "Reused from an earlier reading."
+        },
+        "seconds": {
+          "type": "number"
+        },
+        "device": {
+          "type": "string",
+          "description": "cuda or cpu."
+        }
+      },
+      "required": [
+        "audio",
+        "durationSeconds",
+        "model",
+        "voice",
+        "voiceName",
+        "language",
+        "cached",
+        "seconds",
+        "device"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "audio",
+        "type": "File",
+        "description": "WAV file (16-bit PCM)."
+      },
+      {
+        "id": "durationSeconds",
+        "type": "Value",
+        "description": "durationSeconds"
+      },
+      {
+        "id": "model",
+        "type": "Value",
+        "description": "Model used."
+      },
+      {
+        "id": "voice",
+        "type": "Value",
+        "description": "Voice id used."
+      },
+      {
+        "id": "voiceName",
+        "type": "Value",
+        "description": "Voice name."
+      },
+      {
+        "id": "language",
+        "type": "Value",
+        "description": "Language spoken."
+      },
+      {
+        "id": "cached",
+        "type": "Value",
+        "description": "Reused from an earlier reading."
+      },
+      {
+        "id": "seconds",
+        "type": "Value",
+        "description": "seconds"
+      },
+      {
+        "id": "device",
+        "type": "Value",
+        "description": "cuda or cpu."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "tts-engine"
+    ]
+  },
+  {
+    "id": "voice_list",
+    "name": "List voices",
+    "description": "Recorded and imported voices, the sample clips of installed models and the XTTS-v2 studio voices.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "voices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "description": "id, name, kind (recorded, sample, studio), language, transcript, clip, families."
+          }
+        }
+      },
+      "required": [
+        "voices"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "voices",
+        "type": "Value",
+        "description": "voices"
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": false
+  },
+  {
+    "id": "voice_add",
+    "name": "Add a voice",
+    "description": "Keep a clip as a voice to imitate. Its words are found by speech to text unless you give them: F5-TTS needs them, XTTS-v2 does not.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "audio": {
+          "type": "string",
+          "description": "Audio file: an absolute path anywhere on this machine, or a name inside data/inputs. WAV, FLAC, OGG or MP3. It is copied for the job and the original is left untouched.",
+          "x-cy-kind": "File"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name shown in the voice list.",
+          "default": ""
+        },
+        "language": {
+          "type": "string",
+          "description": "Language spoken in the clip, such as fr or en.",
+          "default": ""
+        },
+        "transcript": {
+          "type": "string",
+          "description": "The exact words spoken in the clip.",
+          "default": ""
+        },
+        "transcribe": {
+          "type": "boolean",
+          "default": true,
+          "description": "Find the words by speech to text when none are given."
+        }
+      },
+      "required": [
+        "audio"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "voice": {
+          "type": "object",
+          "description": "id, name, kind (recorded, sample, studio), language, transcript, clip, families."
+        }
+      },
+      "required": [
+        "voice"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "voice",
+        "type": "Object",
+        "description": "id, name, kind (recorded, sample, studio), language, transcript, clip, families."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "stt-engine"
+    ]
+  },
+  {
+    "id": "voice_delete",
+    "name": "Delete a voice",
+    "description": "Move a recorded or imported voice to data/voices/deleted.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "voice": {
+          "type": "string",
+          "description": "Voice id."
+        }
+      },
+      "required": [
+        "voice"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "voice": {
+          "type": "string",
+          "description": "Voice id."
+        },
+        "deleted": {
+          "type": "boolean"
+        },
+        "keptIn": {
+          "type": "string",
+          "description": "Where the voice was moved."
+        }
+      },
+      "required": [
+        "voice",
+        "deleted",
+        "keptIn"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "voice",
+        "type": "Value",
+        "description": "Voice id."
+      },
+      {
+        "id": "deleted",
+        "type": "Value",
+        "description": "deleted"
+      },
+      {
+        "id": "keptIn",
+        "type": "Value",
+        "description": "Where the voice was moved."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "speech_unload",
+    "name": "Unload the speech models",
+    "description": "Stop both speech workers and free the memory they hold.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "stopped": {
+          "type": "object",
+          "description": "Which workers were running."
+        }
+      },
+      "required": [
+        "stopped"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "stopped",
+        "type": "Object",
+        "description": "Which workers were running."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "resident_status",
+    "name": "Local model status",
+    "description": "Whether a local model is loaded, on which device, with which adapters.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "resident": {
+          "type": "object",
+          "description": "Resident server state."
+        },
+        "adapters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Adapters reported by the running server."
+        },
+        "properties": {
+          "type": "object",
+          "description": "Server properties, when loaded."
+        }
+      },
+      "required": [
+        "resident",
+        "adapters",
+        "properties"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "resident",
+        "type": "Object",
+        "description": "Resident server state."
+      },
+      {
+        "id": "adapters",
+        "type": "Value",
+        "description": "Adapters reported by the running server."
+      },
+      {
+        "id": "properties",
+        "type": "Object",
+        "description": "Server properties, when loaded."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "resident_unload",
+    "name": "Unload the local model",
+    "description": "Stop the local llama.cpp server and release its reservation.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "stopped": {
+          "type": "boolean"
+        },
+        "resident": {
+          "type": "object",
+          "description": "State after stopping."
+        }
+      },
+      "required": [
+        "stopped",
+        "resident"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "stopped",
+        "type": "Value",
+        "description": "stopped"
+      },
+      {
+        "id": "resident",
+        "type": "Object",
+        "description": "State after stopping."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "lora_scale",
+    "name": "Change adapter strength",
+    "description": "Set LoRA strengths on the running local server without reloading the model.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "loras": {
+          "type": "array",
+          "default": [],
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "strength"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "strength": {
+                "type": "number",
+                "minimum": -4,
+                "maximum": 4
+              }
+            }
+          },
+          "description": "Strengths in the order the adapters were loaded."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "adapters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Adapters as the server reports them afterwards."
+        }
+      },
+      "required": [
+        "adapters"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "adapters",
+        "type": "Value",
+        "description": "Adapters as the server reports them afterwards."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "credential_status",
+    "name": "API key status",
+    "description": "Whether a key is configured for a provider and how it is protected. Never returns the key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Provider id. Empty reports every provider that can take a key.",
+          "default": ""
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "credentials": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "One status per provider."
+        }
+      },
+      "required": [
+        "credentials"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "credentials",
+        "type": "Value",
+        "description": "One status per provider."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "credential_clear",
+    "name": "Remove an API key",
+    "description": "Delete a stored key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Provider id."
+        }
+      },
+      "required": [
+        "provider"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "providerId": {
+          "type": "string",
+          "description": "Provider id."
+        },
+        "removed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "providerId",
+        "removed"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "providerId",
+        "type": "Value",
+        "description": "Provider id."
+      },
+      {
+        "id": "removed",
+        "type": "Value",
+        "description": "removed"
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "diagnostics",
+    "name": "Diagnostics",
+    "description": "One report covering providers, engines, weights, storage and the resident model.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "report": {
+          "type": "object",
+          "description": "The diagnostic report."
+        },
+        "file": {
+          "type": "string",
+          "description": "Report file in the job workspace.",
+          "x-cy-kind": "File"
+        }
+      },
+      "required": [
+        "report",
+        "file"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "report",
+        "type": "Object",
+        "description": "The diagnostic report."
+      },
+      {
+        "id": "file",
+        "type": "File",
+        "description": "Report file in the job workspace."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "network",
+      "processSpawn"
+    ],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "update_check",
+    "name": "Check for updates",
+    "description": "Ask the configured GitHub sources what the application and the engine could move to.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "string",
+          "enum": [
+            "application",
+            "engine",
+            "all"
+          ],
+          "default": "all"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "streams": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "One entry per update stream."
+        }
+      },
+      "required": [
+        "streams"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "streams",
+        "type": "Value",
+        "description": "One entry per update stream."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "network"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": false
+  },
+  {
+    "id": "update_download",
+    "name": "Download an update",
+    "description": "Stage an update under runtime/updates and verify it there. Nothing is activated.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "string",
+          "enum": [
+            "application",
+            "engine"
+          ],
+          "default": "application"
+        },
+        "version": {
+          "type": "string",
+          "description": "Exact release tag to stage.",
+          "default": ""
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "staged": {
+          "type": "boolean"
+        },
+        "stream": {
+          "type": "string",
+          "description": "Stream staged."
+        },
+        "version": {
+          "type": "string",
+          "description": "Version staged."
+        },
+        "path": {
+          "type": "string",
+          "description": "Staging directory."
+        },
+        "report": {
+          "type": "object",
+          "description": "Verification details."
+        }
+      },
+      "required": [
+        "staged",
+        "stream",
+        "version",
+        "path",
+        "report"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "staged",
+        "type": "Value",
+        "description": "staged"
+      },
+      {
+        "id": "stream",
+        "type": "Value",
+        "description": "Stream staged."
+      },
+      {
+        "id": "version",
+        "type": "Value",
+        "description": "Version staged."
+      },
+      {
+        "id": "path",
+        "type": "Value",
+        "description": "Staging directory."
+      },
+      {
+        "id": "report",
+        "type": "Object",
+        "description": "Verification details."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [
+      "network"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "application-update"
+    ]
+  },
+  {
+    "id": "update_apply",
+    "name": "Apply a staged update",
+    "description": "Activate a verified staged update, keeping the previous version for a rollback. data/ is never replaced.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "string",
+          "enum": [
+            "application",
+            "engine"
+          ],
+          "default": "application"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "applied": {
+          "type": "boolean"
+        },
+        "stream": {
+          "type": "string",
+          "description": "Stream applied."
+        },
+        "version": {
+          "type": "string",
+          "description": "Version now active."
+        },
+        "backup": {
+          "type": "string",
+          "description": "Kept previous version."
+        },
+        "restartRequired": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "applied",
+        "stream",
+        "version",
+        "backup",
+        "restartRequired"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "applied",
+        "type": "Value",
+        "description": "applied"
+      },
+      {
+        "id": "stream",
+        "type": "Value",
+        "description": "Stream applied."
+      },
+      {
+        "id": "version",
+        "type": "Value",
+        "description": "Version now active."
+      },
+      {
+        "id": "backup",
+        "type": "Value",
+        "description": "Kept previous version."
+      },
+      {
+        "id": "restartRequired",
+        "type": "Value",
+        "description": "restartRequired"
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "application-update"
+    ]
+  },
+  {
+    "id": "update_rollback",
+    "name": "Roll back an update",
+    "description": "Restore the version kept before the last update.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "string",
+          "enum": [
+            "application",
+            "engine"
+          ],
+          "default": "application"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "restored": {
+          "type": "boolean"
+        },
+        "stream": {
+          "type": "string",
+          "description": "Stream restored."
+        },
+        "version": {
+          "type": "string",
+          "description": "Version restored."
+        },
+        "restartRequired": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "restored",
+        "stream",
+        "version",
+        "restartRequired"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "restored",
+        "type": "Value",
+        "description": "restored"
+      },
+      {
+        "id": "stream",
+        "type": "Value",
+        "description": "Stream restored."
+      },
+      {
+        "id": "version",
+        "type": "Value",
+        "description": "Version restored."
+      },
+      {
+        "id": "restartRequired",
+        "type": "Value",
+        "description": "restartRequired"
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "application-update"
+    ]
+  },
+  {
+    "id": "update_settings",
+    "name": "Update sources",
+    "description": "Read or change the GitHub sources and the automatic check preference.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "application_repository": {
+          "type": "string",
+          "description": "owner/name of the application repository. Empty leaves it unchanged.",
+          "default": ""
+        },
+        "engine_repository": {
+          "type": "string",
+          "description": "owner/name of the engine repository.",
+          "default": ""
+        },
+        "automatic_check": {
+          "type": "string",
+          "enum": [
+            "",
+            "on",
+            "off"
+          ],
+          "default": "",
+          "description": "Turn the startup check on or off."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "settings": {
+          "type": "object",
+          "description": "The stored update settings."
+        }
+      },
+      "required": [
+        "settings"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "settings",
+        "type": "Object",
+        "description": "The stored update settings."
+      }
+    ],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    },
+    "supportedBackends": [],
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false
+  },
+  {
+    "id": "model_library_list",
+    "name": "model_library_list",
+    "description": "List compatible model formats, device capabilities and registered local model/LoRA references.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "capabilities": {
+          "type": "object"
+        },
+        "library": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$id": "urn:cytools:v1:model-library",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schemaVersion",
+            "models"
+          ],
+          "properties": {
+            "schemaVersion": {
+              "const": 1
+            },
+            "models": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "path",
+                  "format",
+                  "kind",
+                  "base",
+                  "license",
+                  "source",
+                  "validation"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "format": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "kind": {
+                    "enum": [
+                      "model",
+                      "lora"
+                    ]
+                  },
+                  "base": {
+                    "type": "string"
+                  },
+                  "license": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "validation": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "capabilities",
+        "library"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "capabilities",
+        "type": "Object",
+        "description": "capabilities"
+      },
+      {
+        "id": "library",
+        "type": "Object",
+        "description": "library"
+      }
+    ],
+    "platforms": [
+      {
+        "os": "Windows",
+        "architecture": "x64",
+        "status": "Supported",
+        "computeBackends": [
+          "CPU",
+          "CUDA"
+        ],
+        "tested": [
+          {
+            "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+            "device": "NVIDIA GeForce RTX 3090 24 GB",
+            "driver": "610.47",
+            "runtime": "Python 3.11.5, cytools-core 0.9.0, imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
+            "date": "2026-09-23",
+            "status": "Launcher, ImGui window in English and French, local GGUF turn on CUDA, GGUF LoRA load and live rescale, Codex app-server and cli-jsonl, Claude Code, Antigravity, Ollama on both of its transports, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures, the CLI, MCP and the pytest suite were executed. OpenCode, the paid HTTP APIs (OpenAI, OpenRouter, Anthropic) and a real GitHub release of this application were not."
+          },
+          {
+            "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+            "device": "NVIDIA GeForce RTX 3090 24 GB",
+            "driver": "610.47",
+            "runtime": "Python 3.11.5, cytools-core 0.10.1 (MIT), imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
+            "date": "2026-10-02",
+            "status": "Re-run after the move to CyToolsCore 0.10.1, application 0.1.1: launcher started from another directory with the existing configuration (Chat, Updates and Options tabs, English), the CLI (describe, diagnostics), a real MCP session with two local GGUF turns, GGUF LoRA load and live rescale on CUDA, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures including the licence notices, the release archive build and its verification, and the pytest suite. Not re-run with this SDK version: Codex, Claude Code, Antigravity, Ollama and the French window. OpenCode, the paid HTTP APIs and a real GitHub release remain not executed."
+          },
+          {
+            "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+            "device": "NVIDIA GeForce RTX 3090 24 GB",
+            "driver": "610.47",
+            "runtime": "Python 3.11.5, cytools-core 0.10.1; speech: stt torch 2.8.0+cpu transformers 5.18.0, tts torch 2.8.0+cu128 transformers 4.57.3 coqui-tts 0.27.5 f5-tts 1.1.22",
+            "date": "2026-10-06",
+            "status": "Application 0.2.0, speech: both speech environments installed by the Tool's operation, the five speech models and the vocoder installed with their digests, transcription with Parakeet TDT 0.6B v3 (French) and Phonon-2 (English) on the CPU, reading aloud with XTTS-v2 (studio voices and a cloned clip, French and English) and F5-TTS (French and English) on CUDA, checked by transcribing the audio back, the Speech and Chat tabs of the window through the real launcher, and the pytest suite. Not executed: microphone recording and loudspeaker playback with a person speaking and listening, and the voice environment on the CPU."
+          }
+        ]
+      },
+      {
+        "os": "Linux",
+        "architecture": "x64",
+        "status": "Experimental",
+        "computeBackends": [
+          "CPU",
+          "CUDA"
+        ]
+      },
+      {
+        "os": "macOS",
+        "architecture": "ARM64",
+        "status": "Unknown",
+        "computeBackends": [
+          "CPU"
+        ]
+      }
+    ],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "supportedBackends": [],
+    "permissions": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    }
+  },
+  {
+    "id": "model_library_register",
+    "name": "model_library_register",
+    "description": "Register an existing compatible local model or LoRA by reference; does not download or copy weights. Registration is shared by clients of this local Tool.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name"
+        },
+        "path": {
+          "type": "string",
+          "description": "Absolute local path visible on the Tool host"
+        },
+        "format": {
+          "type": "string",
+          "description": "Format ID from model_library_list"
+        },
+        "base": {
+          "type": "string",
+          "description": "Compatible base variant ID"
+        },
+        "license": {
+          "type": "string",
+          "description": "License identifier or terms"
+        },
+        "source": {
+          "type": "string",
+          "description": "Original source URL or repository"
+        }
+      },
+      "required": [
+        "name",
+        "path",
+        "format"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "name",
+            "path",
+            "format",
+            "kind",
+            "base",
+            "license",
+            "source",
+            "validation"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "format": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "enum": [
+                "model",
+                "lora"
+              ]
+            },
+            "base": {
+              "type": "string"
+            },
+            "license": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "validation": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "additionalProperties": false
+    },
+    "outputs": [
+      {
+        "id": "model",
+        "type": "Object",
+        "description": "model"
+      }
+    ],
+    "platforms": [
+      {
+        "os": "Windows",
+        "architecture": "x64",
+        "status": "Supported",
+        "computeBackends": [
+          "CPU",
+          "CUDA"
+        ],
+        "tested": [
+          {
+            "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+            "device": "NVIDIA GeForce RTX 3090 24 GB",
+            "driver": "610.47",
+            "runtime": "Python 3.11.5, cytools-core 0.9.0, imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
+            "date": "2026-09-23",
+            "status": "Launcher, ImGui window in English and French, local GGUF turn on CUDA, GGUF LoRA load and live rescale, Codex app-server and cli-jsonl, Claude Code, Antigravity, Ollama on both of its transports, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures, the CLI, MCP and the pytest suite were executed. OpenCode, the paid HTTP APIs (OpenAI, OpenRouter, Anthropic) and a real GitHub release of this application were not."
+          },
+          {
+            "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+            "device": "NVIDIA GeForce RTX 3090 24 GB",
+            "driver": "610.47",
+            "runtime": "Python 3.11.5, cytools-core 0.10.1 (MIT), imgui-bundle 1.92.900, llama.cpp b11114 CUDA 12.4",
+            "date": "2026-10-02",
+            "status": "Re-run after the move to CyToolsCore 0.10.1, application 0.1.1: launcher started from another directory with the existing configuration (Chat, Updates and Options tabs, English), the CLI (describe, diagnostics), a real MCP session with two local GGUF turns, GGUF LoRA load and live rescale on CUDA, an OpenAI-compatible endpoint, cancellation of a running inference, the update mechanism with fixtures including the licence notices, the release archive build and its verification, and the pytest suite. Not re-run with this SDK version: Codex, Claude Code, Antigravity, Ollama and the French window. OpenCode, the paid HTTP APIs and a real GitHub release remain not executed."
+          },
+          {
+            "osVersion": "Windows 10 Enterprise LTSC 2021 build 19044",
+            "device": "NVIDIA GeForce RTX 3090 24 GB",
+            "driver": "610.47",
+            "runtime": "Python 3.11.5, cytools-core 0.10.1; speech: stt torch 2.8.0+cpu transformers 5.18.0, tts torch 2.8.0+cu128 transformers 4.57.3 coqui-tts 0.27.5 f5-tts 1.1.22",
+            "date": "2026-10-06",
+            "status": "Application 0.2.0, speech: both speech environments installed by the Tool's operation, the five speech models and the vocoder installed with their digests, transcription with Parakeet TDT 0.6B v3 (French) and Phonon-2 (English) on the CPU, reading aloud with XTTS-v2 (studio voices and a cloned clip, French and English) and F5-TTS (French and English) on CUDA, checked by transcribing the audio back, the Speech and Chat tabs of the window through the real launcher, and the pytest suite. Not executed: microphone recording and loudspeaker playback with a person speaking and listening, and the voice environment on the CPU."
+          }
+        ]
+      },
+      {
+        "os": "Linux",
+        "architecture": "x64",
+        "status": "Experimental",
+        "computeBackends": [
+          "CPU",
+          "CUDA"
+        ]
+      },
+      {
+        "os": "macOS",
+        "architecture": "ARM64",
+        "status": "Unknown",
+        "computeBackends": [
+          "CPU"
+        ]
+      }
+    ],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "supportedBackends": [],
+    "permissions": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 1
+    }
+  }
+]
+```
+
+## Host project instructions
+
+# CyTools_AIChat — règles de développement
+
+Lire `README.md`, `Docs/CapabilityCoverage.md` et, dans `Docs/`, `AgentGuide.md`,
+`StandaloneDelivery.md`, `Localization.md`, `GenerationConfigurations.md`,
+`StandaloneDiagnosticsAndModels.md` et `FullOperationAccess.md`.
+
+## Ce que cet outil est
+
+Un moteur de discussion. Un tour est un job soumis au `Runtime` de CyToolsCore ; l'interface,
+la CLI et MCP passent tous par là. Il n'existe qu'un scheduler, qu'un registre de jobs et
+qu'un modèle résident, dans le processus du runtime.
+
+## Règles propres à ce Tool
+
+- **Ne pas réimplémenter le Core.** Validation, jobs, sessions, workspaces, évènements,
+  ordonnancement, téléchargements et transports viennent du SDK.
+- **Un fournisseur déclare sa famille.** `STATELESS` signifie que la transcription stockée
+  est le contexte ; `SESSION` signifie que le fournisseur garde l'historique et qu'on le
+  reprend par identifiant natif. Cette distinction est écrite dans chaque message stocké :
+  ne pas la gommer.
+- **Aucun secret dans un job.** Une clé API se lit au moment de l'appel depuis
+  `aichat/credentials.py` et se place dans un en-tête. Jamais dans `argv`, dans les
+  paramètres d'une opération, dans une configuration de génération, dans un évènement ni
+  dans le journal.
+- **Copier des poids, jamais les lier.** `app/scripts/import_models.py` duplique en entier un
+  fichier déjà téléchargé par un autre CyTool et vérifie la copie contre l'empreinte du
+  catalogue. Un lien dur ou symbolique ferait dépendre deux Tools d'un même fichier :
+  désinstaller le modèle d'un côté casserait l'autre.
+- **Le worker réserve les poids, pas le job.** L'estimateur d'un tour ne compte que sa propre
+  surcharge ; le modèle résident réserve le périphérique tant que son processus tourne.
+  Compter les mêmes gigaoctets des deux côtés double le besoin et refuse un modèle de 20 Go
+  sur une carte de 24 Go qui le contient.
+- **Le paquet de release exclut les fichiers de travail.** `app/scripts/build_release.py`
+  construit l'archive `app/` attendue par le flux de mise à jour sans `AGENTS.md`,
+  `CyToolsGuide.md`, `Docs/AgentGuide.md`, `Docs/AgentPrompt.md` ni les caches. Ces fichiers restent dans le dépôt ; ils ne font pas partie du produit livré.
+- **`data/` n'est jamais remplacé.** Ni par une mise à jour, ni par une réinstallation du
+  moteur, ni pour « faire le ménage ». Supprimer une conversation la déplace dans
+  `data/conversations/deleted/`.
+- **La bibliothèque vendue reste telle quelle.** `aichat/vendor/cyai_connectors/` est une
+  copie de sa source amont. Pour changer son comportement, l'étendre depuis
+  `aichat/providers/agentcli.py` — comme le fait déjà l'ajout de `--append-system-prompt`
+  et la normalisation de sa ponctuation typographique.
+- **Résoudre les chemins à l'appel.** `catalog` et `maintenance` lisent `paths.X` au moment
+  où ils en ont besoin, pas à l'import. Figer un chemin à l'import crée une dépendance à
+  l'ordre des imports qui ne se voit que le jour où quelque chose redirige le répertoire de
+  données.
+- **Les CLI d'agent sont ouvertes en lecture seule**, demandes d'autorisation refusées. Cet
+  outil sert à parler au modèle, pas à le laisser agir sur la machine.
+- **Groupes d'exclusivité (CyToolsCore 0.10).** `build_manifest.py` déclare
+  `exclusiveGroups` pour les opérations qui travaillent sur les mêmes fichiers :
+  `model-files`, `engine-files`, `application-update`. C'est le scheduler du SDK qui les
+  sérialise ; ne pas ajouter de file d'attente dans les handlers. `chat` n'appartient à
+  aucun groupe : un groupe vaut pour l'opération entière et sérialiserait tous les
+  onglets. Seuls les tours du modèle local sont sérialisés, par le fournisseur local, parce
+  que le serveur llama.cpp n'a qu'un slot.
+- **`LICENCES/` fait partie du produit livré.** `LICENCES/CyToolsCore-MIT.txt` est la copie
+  inchangée de la licence du SDK installé, `LICENCES/SOURCES.txt` liste les sources ;
+  l'archive de release les embarque avec `LICENSE`, l'updater refuse une archive qui ne les
+  contient pas et les déploie à côté de `app/`. Textes de licence en anglais.
+- **La voix tourne dans deux environnements séparés.** `runtime/engines/stt` (transformers 5,
+  processeur) et `runtime/engines/tts` (transformers 4.57, CUDA) : XTTS-v2 ne fonctionne pas
+  avec transformers 5 et Parakeet/Phonon en a besoin. Ne pas les fusionner. f5-tts s'installe
+  sans ses dépendances déclarées (gradio) ; ce que son inférence importe est listé dans
+  `requirements-speech-tts.txt`.
+- **Le processus vocal ne reçoit aucun secret** (ni jeton CyTools, ni clé de fournisseur) et
+  tourne hors ligne sur des poids déjà vérifiés par le catalogue.
+- **La dictée n'envoie jamais rien d'elle-même** : les mots vont dans la zone de saisie.
+  `speak` sur un message stocké lit le texte de la conversation, jamais un texte fourni par
+  l'appelant à sa place.
+- **Un texte lu passe par `aichat/speech_text.py`** : le Markdown est réduit aux mots (blocs de
+  code, liens, accents graves et emphase retirés) puis découpé sous la limite de longueur
+  d'XTTS par langue. Ne pas réactiver `enable_text_splitting` : il exige spaCy avec ses
+  modules japonais et chinois.
+- **Licences non commerciales** (XTTS-v2, F5-TTS) : installées seulement après l'acceptation
+  de l'utilisateur, comme les autres modèles.
+
+## Interface
+
+Anglais par défaut, français sélectionnable. Écrire le texte anglais dans `tr(...)` ou
+`label(...)`, ajouter la traduction dans `locales/aichat-fr.json`, puis exécuter
+`app/scripts/merge_translations.py`. Son option `--check` sort en erreur s'il manque une
+entrée. Ne jamais traduire un identifiant, un chemin, un nom de modèle, une invite ou le
+texte saisi par l'utilisateur.
+
+L'apparence vient de CyUI : `app/cyui.py` est une copie inchangée de
+`CyImgui_Interface/python/cyui.py` (MIT) ; ne pas la modifier ici, la remplacer par la
+nouvelle version de la bibliothèque. Ses règles s'appliquent :
+
+- couleurs uniquement par rôles de `cyui.palette()` (`text`, `textDim`, `accent`,
+  `success`...), jamais de couleur écrite en dur ; tailles en `cyui.dp()` ;
+- un seul bouton principal par vue, les actions secondaires en boutons icônes avec infobulle
+  (`cyui.icon.*`), les actions destructives en `danger` et confirmées dans une modale ;
+- les réglages en `cyui.property(...)`, les blocs en `card(...)` de `gui/widgets.py`, une
+  liste vide en `cyui.empty_state(...)`, un retour en `cyui.notify(...)` ;
+- vérifier les cinq thèmes (dont `light-grey`) et les deux densités dans Options.
+
+Segoe UI couvre les accents : le français s'écrit avec ses accents. Les libellés de badge
+passent par `tr('...').upper()` (la recherche de traduction ignore la casse). Les fonctions
+de `ui_common.imgui` traduisent déjà leur libellé : leur passer le texte anglais.
+
+Après toute modification d'un paramètre ou d'un fournisseur : régénérer le manifeste avec
+`app/build_manifest.py`.
+
+## Preuves
+
+Une capacité n'est annoncée que si elle a été exécutée. `app/platform-tested.json` ne se
+remplit qu'à partir de vraies exécutions, et `Docs/CapabilityCoverage.md` sépare
+« implémenté et testé », « implémenté non validé » et « non exposé » avec la raison. Les
+rapports vivent dans `data/reports/`.
+
+```powershell
+runtime\python\Scripts\python.exe -m pytest app\tests -q
+runtime\python\Scripts\python.exe app\tests\acceptance_local.py --engine cuda
+runtime\python\Scripts\python.exe app\tests\acceptance_http.py --engine cuda
+runtime\python\Scripts\python.exe app\tests\acceptance_mcp.py
+runtime\python\Scripts\python.exe app\tests\acceptance_update.py
+```
+
+## Modular CyUI maintenance
+
+Read Docs/CyUIMigration.md. cyui.py and cyui_modules/ are unmodified upstream files pinned
+and hashed in cyui-source.json. Do not patch them locally; keep product adapters outside
+the library. Refresh with scripts/sync_cyui.py from the exact revision. Preserve domain
+behavior, isolated view state, cancellation and Undo transactions; run the app suite and
+tests/test_modular_ui.py. Keep both CyUI MIT notices and the upstream license link.

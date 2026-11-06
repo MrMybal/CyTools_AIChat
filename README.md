@@ -167,4 +167,4 @@ CyUI: MIT ([upstream license](https://github.com/MrMybal/CyUI/blob/main/LICENSE)
 
 ## Local documentation
 
-Open **Options → Open local manual (F1)** or press **F1** in the application. The complete offline reader is shipped in `app/help/index.html`. [Regenerate the manual](app/documentation/README.md).
+Open **Options → Open local manual (F1)** or press **F1** in the application. The complete offline reader is shipped in `app/Documentation/Documentation.html`. [Regenerate the manual](app/.CyDocBuild/README.md).
