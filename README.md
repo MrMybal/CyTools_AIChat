@@ -1,170 +1,148 @@
-# CyTools_AIChat
+<table width="100%">
+  <tr>
+    <td width="300" align="left" valign="top">
+      <a href="https://mrmybal.github.io/CyTools_AIChat/">Website</a><br>
+      <a href="https://mrmybal.github.io/CyTools_AIChat/Documentation.html#/en/overview">Documentation</a><br>
+      <a href="https://github.com/MrMybal/CyTools_AIChat">GitHub</a><br><br>
+      <sub>README</sub><br>
+      <a href="README.md">English</a> · <a href="README.fr.md">Français</a>
+    </td>
+    <td width="400" align="center" valign="middle">
+      <a href="https://mrmybal.github.io/CyTools_AIChat/"><img src="app/assets/branding/logo.png" alt="CyTools AIChat logo" width="128"></a>
+    </td>
+    <td width="300" align="right" valign="top">
+      <p><sub>Application license</sub><br><a href="LICENSE"><strong>GPL-3.0-only</strong></a></p>
+      <p><sub>Application version</sub><br><a href="VERSION.md"><strong>0.2.2</strong></a><br><strong>EXPERIMENTAL</strong></p>
+      <p><a href="https://github.com/MrMybal/CyTools_AIChat/releases/download/v0.2.2/CyTools_AIChat-0.2.2-windows-x64.zip"><strong>Download</strong></a><br><sub>Windows x64 · portable</sub></p>
+    </td>
+  </tr>
+</table>
 
-[Documentation](https://mrmybal.github.io/CyTools_AIChat/#/en/overview) · [Website](https://mrmybal.github.io/CyTools_AIChat/) · [Français](https://mrmybal.github.io/CyTools_AIChat/#/fr/overview)
+<h1 align="center">CyTools AIChat</h1>
 
-<p align="center">
-  <img src="app/assets/branding/logo.png" alt="CyTools AIChat logo" width="160">
-</p>
+Maintained by **Cyberalien**.
 
-A chat engine for Windows: a desktop application, a command line and an MCP server on one
-runtime, built on the [CyToolsCore](https://github.com/MrMybal/CyToolsCore) SDK. Several
-conversations stay open in tabs and are kept on disk, with the models you already have access
-to — the Codex, Claude Code and Antigravity command lines, any OpenAI-compatible endpoint,
-Ollama — and with local GGUF models run by the Tool's own llama.cpp server, with LoRA adapters.
-Messages can be dictated and replies read aloud, in French as well as in English.
-French user guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README.md).
 
-Maintenance: **Cyberalien**.
+Keep your conversations together, switch between connected assistants and local models, and add a voice when you need one. For people who write, explore ideas and want one desktop home for different language models.
 
-<p align="center">
-  <img src="docs/screenshots/providers.png" alt="Providers tab: agent command lines, HTTP endpoints and APIs detected on the machine" width="49%">
-  <img src="docs/screenshots/speech.png" alt="Speech tab: dictation and reading aloud settings, voices" width="49%">
-</p>
+> **EXPERIMENTAL · 0.2.2**
+>
+> Published Windows build for evaluation; some engine paths remain unvalidated. Read the [version notes and known limitations](VERSION.md).
 
-## What it does
+[![Chat workspace · illustrative conversation, prepared without sending a model request.](website/assets/showcase/conversation.webp)](website/assets/showcase/conversation.webp)
 
-- **Conversations in tabs**, each one a readable JSON document in `data/conversations/`.
-  Message text can be selected with the mouse and copied (Ctrl+C), or copied whole.
-  Closing a tab deletes nothing. The trash button on a conversation, or the selection
-  mode (several at once), moves it to a backup folder. Open tabs are restored at the next
-  start. Export to Markdown or JSON.
-- **Two provider families, told apart in the interface and in every stored message.** A
-  *session* provider (Codex, Claude Code, Antigravity, OpenCode) keeps the history on its
-  side and is resumed by its native identifier; it uses the account already signed in inside
-  its own program, so no key is entered here. A *stateless* provider (OpenAI-compatible
-  endpoint, OpenAI, OpenRouter, Claude API, Ollama, local model) receives the stored transcript
-  on every turn, so the conversation on disk is the context and a history limit really
-  applies.
-- **Local models with LoRA**: a pinned llama.cpp build (CPU or CUDA) downloaded and verified
-  from the Models tab, GGUF weights installed from a catalogue with pinned revisions and
-  SHA-256 checks, GGUF LoRA adapters with a strength that can be changed on the running
-  server, a reasoning-effort setting for thinking models, and the model kept resident between
-  turns. Weights already downloaded by another CyTool can be copied in with
-  `app/scripts/import_models.py`.
-- **Speech, both ways, on your machine.** *Dictate* records the microphone and writes the
-  words into the message box while you speak, about half a second behind you; the sentence
-  being spoken may still change until the next pause. Nothing is sent by itself: Parakeet TDT 0.6B v3 for French and
-  24 other languages, or Phonon-2 for English, on the CPU. *Read aloud* speaks a reply, Markdown reduced to
-  its words, starting with the first sentence while the rest is still being made (about
-  1.5 s once the voice is loaded), and replies can be read as they arrive: XTTS-v2 (17 languages, 58 studio voices, or a clip)
-  and F5-TTS (an English and a French model), on the GPU. A voice can be recorded or
-  imported in the Speech tab; its words are found by speech to text. XTTS-v2 and F5-TTS are
-  licensed for non-commercial use only.
-- **Streaming, cancellation, presets**: tokens stream into the tab, a turn can be cancelled
-  mid-reply and keeps what was already received, and system prompts with sampling values are
-  saved as reusable presets.
-- **API keys kept out of jobs and logs**: a key entered in the Providers tab is sealed with
-  DPAPI for the Windows account; an environment variable you export yourself is used instead
-  when present.
-- **Updates in three separate streams** (application, engine, weights), staged under
-  `runtime/updates`, verified before activation, with a rollback; `data/` is never replaced.
-- Interface in English by default and fully in French from **Options**, drawn with
-  [CyUI](LICENCES/SOURCES.txt) (five themes, compact or comfortable density).
+*Chat workspace · illustrative conversation, prepared without sending a model request.*
 
-The [capability matrix](app/Docs/CapabilityCoverage.md) separates what was executed on the
-author's machine from what is only wired: the Codex, Claude Code, Antigravity, Ollama and
-OpenAI-compatible providers and seven local models were run; OpenCode and the paid OpenAI,
-OpenRouter and Anthropic APIs were not.
 
-## Requirements
+## The application
 
-- Windows 10/11 x64, the only platform executed by the author. A Linux launcher script is
-  provided but was never run, and the engine catalogue only carries Windows builds.
-- Python 3.11 and Git on the PATH to install from source (pip clones the SDK from its
-  repository), and the Visual C++ Build Tools to compile the launcher.
-- An NVIDIA GPU for comfortable use of local models; the CPU engine works everywhere, slowly.
-  Remote providers need no GPU at all.
-- Model weights and engines are **not** in this repository: they are downloaded from the
-  Models tab. No release archive is published yet; install from source.
+### Conversations
 
-## Installation from source
+Open several tabs, return to an earlier thread and keep the transcript on disk. Closing a tab keeps the conversation available.
+
+### Connections
+
+Detect supported agent command lines or configure an HTTP provider. Session providers keep their native history; stateless providers receive the saved transcript. The interface identifies the provider and model.
+
+[![Providers workspace · detection and connection settings.](website/assets/showcase/providers.webp)](website/assets/showcase/providers.webp)
+
+*Providers workspace · detection and connection settings.*
+
+
+### Speech
+
+Dictation writes into the message box without sending it. Optional local speech engines read replies aloud; voice settings and reference takes are managed in a dedicated workspace.
+
+[![Speech settings · engines and weights are separate downloads.](website/assets/showcase/speech.webp)](website/assets/showcase/speech.webp)
+
+*Speech settings · engines and weights are separate downloads.*
+
+
+## Features
+
+- **Local models:** compatible GGUF weights, CPU/CUDA engine selection, resident models, GGUF LoRA strength and model-specific reasoning settings.
+- **Provider history:** session-based agent connectors resume their native conversation; stateless APIs use the saved transcript.
+- **Conversation management:** searchable saved threads, tabs, cancellation, presets and Markdown/JSON export. Closing a tab does not delete its conversation.
+- **Voice:** optional local dictation and spoken replies; dictation fills the input without sending a message. Speech and text models are installed separately.
+- **Automation:** the desktop, CLI and MCP share stored conversations and operation contracts. Agent CLI providers in this application are read-only.
+
+**Desktop and automation:** English is the default interface language; French is selectable in Options. Save/load generation configurations, follow copyable application logs and use the declared operations through the CLI or MCP. The [manual](https://mrmybal.github.io/CyTools_AIChat/Documentation.html#/en/overview) describes the real parameters and output contracts.
+
+---
+
+## Installation
+
+The published application build is **Windows x64**. The portable ZIP includes its private Python runtime and base UI/media dependencies. Models and optional heavy engines are separate downloads.
+
+1. [Download CyTools AIChat 0.2.2](https://github.com/MrMybal/CyTools_AIChat/releases/download/v0.2.2/CyTools_AIChat-0.2.2-windows-x64.zip).
+2. Extract the complete ZIP into a writable folder. Keep `app/` and `runtime/` beside the launcher.
+3. Open **CyTools_AIChat.exe**. Use the installation/model workspace for the components you need; review each component licence and any provider access conditions before download.
+
+No machine Python is needed just to open the portable application. Source setup and some optional engine installers require additional tools such as Git. Keep the full release folder; the standalone `.exe` or an `app` update ZIP alone is not a complete installation.
+
+Windows x64 is the tested platform. Local GGUF models use the compatible llama.cpp CPU or CUDA engine. Remote providers need their own installed/authenticated client or account. OpenCode and paid provider APIs were not all exercised. Linux has a launcher but is unvalidated.
+
+### Updates and data
+
+For an existing compatible installation, use its Updates page and the matching application update package. Keep `data/`, installed engines and models. An update for another runtime ABI must not be forced. If the required runtime changes, use the complete portable release in a separate folder and follow the migration instructions.
+
+## Source, build and required libraries
+
+<details>
+<summary>Windows source setup and optional build tools</summary>
+
+
+Use Python **3.11** for the base source environment. Git is needed for cloning and pinned Git requirements. Building the launcher needs the MSVC x64 Build Tools; use a developer command prompt.
 
 ```powershell
 git clone https://github.com/MrMybal/CyTools_AIChat.git
 cd CyTools_AIChat
 py -3.11 -m venv runtime\python
-.\runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt
-powershell -ExecutionPolicy Bypass -File app\build_launcher.ps1
+runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt
+powershell -File app\build_launcher.ps1
+.\CyTools_AIChat.exe
 ```
 
-Then double-click `CyTools_AIChat.exe`, or run `.\runtime\python\Scripts\pythonw.exe app\desktop.py`.
+The exact base requirements are in [app/requirements.txt](app/requirements.txt). Engines use their own environments and model catalogues; installing the base environment does not install them. Follow the [developer setup](app/README.md) for the detailed build and optional components.
 
-## First launch
+</details>
 
-1. **Providers** tab: press *Detect again*. The agent command lines that are installed and
-   signed in show as available; enter a key or a base URL for the HTTP providers you want.
-2. **Models** tab, for local models: install the llama.cpp engine (CUDA if you have an NVIDIA
-   card, otherwise CPU), accept a model's licence on its page, download it.
-3. **Chat** tab: pick a provider and a model in the tab header, write, send.
-4. **Speech** tab, for dictation and reading aloud: install the two speech environments
-   (about 1.6 GB and 7.5 GB, created by pip under `runtime/engines`), then accept the
-   licence of a speech-to-text model and of a voice model and download them.
+---
 
-## Command line and MCP
+## License
 
-```powershell
-.\runtime\python\Scripts\python.exe app\tool.py describe
-.\runtime\python\Scripts\python.exe app\tool.py invoke chat --params-file app\params.json
-.\runtime\python\Scripts\python.exe app\tool.py invoke list_providers --params "{}"
-.\runtime\python\Scripts\python.exe app\tool.py mcp          # MCP stdio server
-.\runtime\python\Scripts\python.exe app\tool.py invoke transcribe --params "{\"audio\": \"C:/rec.wav\"}"
-.\runtime\python\Scripts\python.exe app\tool.py invoke speak --params "{\"text\": \"Bonjour !\"}"
-```
+**CyTools AIChat is licensed under [GPL-3.0-only](LICENSE).** CyToolsCore, CyUI and CyDoc remain MIT components; their licences do not change the application licence. Optional engines, plugins and model weights retain their own terms.
 
-The conversation an AI client creates over MCP is the same document the window opens: both
-go through the one runtime, and the local model loaded for one is the one the other uses.
+### Main components and third-party libraries
 
-## Repository layout
+| Library · source | License · terms | Use / scope |
+| --- | --- | --- |
+| [CyToolsCore 0.10.1](https://github.com/MrMybal/CyToolsCore) | [MIT](LICENCES/CyToolsCore-MIT.txt) | SDK/runtime: jobs, sessions, resources, CLI and MCP. |
+| [CyUI 1.2.0](https://github.com/MrMybal/CyUI) | [MIT](LICENCES/CyUI-MIT.txt) | Selected bundled Python UI modules. |
+| [CyDoc 0.1.0](https://github.com/MrMybal/CyDoc) | [MIT](LICENCES/CyDoc-MIT.txt) | Bundled offline reader; Node/npm are authoring/build tools only. |
+| [Dear ImGui / imgui-bundle](https://github.com/pthom/imgui_bundle) | [MIT + component notices](https://github.com/pthom/imgui_bundle/blob/main/LICENSE) | Desktop renderer and its bundled native components. |
+| [CPython 3.11](https://www.python.org/) | [PSF + component notices](https://docs.python.org/3.11/license.html) | Private runtime included in the Windows portable archive. |
+| [NumPy / Pillow](https://numpy.org/) | [BSD-3-Clause / MIT-CMU](LICENCES/SOURCES.txt) | Base runtime: arrays and images. |
+| [sounddevice / PortAudio](https://github.com/spatialaudio/python-sounddevice) | [MIT / PortAudio terms](LICENCES/SOURCES.txt) | Playback and microphone capture. |
+| [llama.cpp](https://github.com/ggml-org/llama.cpp) | [MIT](https://github.com/ggml-org/llama.cpp/blob/master/LICENSE) | Optional CPU/CUDA model engine; CUDA libraries retain NVIDIA terms. |
+| [Speech engine packages](app/requirements-speech-tts.txt) | [BSD-3-Clause / Apache-2.0 / MPL-2.0 / MIT](LICENCES/SOURCES.txt) | Optional PyTorch, transformers, coqui-tts and F5-TTS environments; model licences are separate. |
+| [cyai_connectors](app/aichat/vendor/cyai_connectors) | [No standalone license declared](LICENCES/SOURCES.txt) | Included connector sources; retain the project distribution notices. |
 
-```
-CyTools_AIChat.exe      Windows launcher (built locally, not in git)
-CyTools_AIChat.sh       Linux launcher (never executed by the author)
-LISEZ-MOI.md            user guide (French)
-LICENSE                 licence of the Tool's own code (GPL-3.0-only)
-LICENCES/               licence texts and source links of the included components
-app/                    code, manifest (CyTool.json), interface, providers, tests, scripts, docs
-data/                   conversations, presets, models, voices, speech, jobs, logs (not in git)
-runtime/                private Python, llama.cpp engines, speech environments (not in git)
-```
+This table indexes the main components; it does not replace their complete transitive notices. Retain [LICENCES/](LICENCES/), [app/licenses.json](app/licenses.json), the licences beside installed packages and the notices in each optional engine/model. CUDA libraries, when installed, also retain NVIDIA’s terms.
 
-Tests (fixtures only, no model loaded): `.\runtime\python\Scripts\python.exe -m pip install -r app\requirements-dev.txt`,
-then `.\runtime\python\Scripts\python.exe -m pytest app\tests -q`. The acceptance scripts in
-`app/tests/` run against the installed providers and weights and write their evidence to
-`data/reports/`.
+## References and links
 
-## Licence
+- [Documentation](https://mrmybal.github.io/CyTools_AIChat/Documentation.html#/en/overview)
+- [Website](https://mrmybal.github.io/CyTools_AIChat/)
+- [Source repository](https://github.com/MrMybal/CyTools_AIChat) · [Releases and checksums](https://github.com/MrMybal/CyTools_AIChat/releases)
+- [Issue tracker](https://github.com/MrMybal/CyTools_AIChat/issues) · [Version notes](VERSION.md)
+- [Developer setup](app/README.md)
 
-The Tool's own code and interface are free software under the **GNU General Public License
-v3.0 only** ([LICENSE](LICENSE)).
+<details>
+<summary><strong>AI Usage</strong></summary>
 
-It is built on the CyToolsCore SDK 0.10.1, which is under the **MIT** licence. The full
-text and the source links of every included component are in [LICENCES/](LICENCES): they
-ship with the product, in the release archive as well as in this repository.
+- [Start here: project agent guide](app/AGENTS.md) — product rules and important files.
+- [Operations and AI integration](app/Documentation/DocAI.md) — actual tool contracts and task usage.
+- [Build this application](app/README.md) — source setup and application-specific commands.
 
-The llama.cpp engine, the speech environments, the agent command lines and every model
-weight, speech models included, are not part of the product: they are installed or downloaded on your machine under their own licences, listed
-in [app/licenses.json](app/licenses.json), in the model catalogue and in the Options tab.
-The Models tab asks for your acceptance before downloading.
-
-## Updating and going back
-
-- **From source**: `git pull`, then
-  `.\runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt`. The second
-  command is what moves the SDK: version 0.1.1 needs CyToolsCore 0.10.1, and replacing
-  `app/` alone would leave the previous SDK in `runtime/python`.
-- **From a release**: the Updates tab stages the archive, verifies it and activates it at
-  your request. An archive built for another runtime is refused rather than half-applied.
-  `data/` is never replaced.
-- **Going back**: *Roll back* in the Updates tab restores the previous `app/` and licence
-  files. From source, check out the earlier commit and run the same `pip install` again.
-
-## Modular interface
-
-CyUI 1.2.0 provides the selected shared interface modules. See [integration and maintenance](app/Docs/CyUIMigration.md) for the module map, preserved application behavior and validation limits.
-
-CyUI: MIT ([upstream license](https://github.com/MrMybal/CyUI/blob/main/LICENSE)); the complete text is included in LICENCES/CyUI-MIT.txt.
-
-
-## Local documentation
-
-Open **Options → Open local manual (F1)** or press **F1** in the application. The complete offline reader is shipped in `app/Documentation/Documentation.html`. [Regenerate the manual](app/.CyDocBuild/README.md).
+</details>
