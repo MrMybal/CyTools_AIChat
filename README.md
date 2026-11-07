@@ -1,6 +1,6 @@
 # CyTools_AIChat
 
-[Documentation](https://mrmybal.github.io/CyTools_AIChat/#/en/overview) · [Français](https://mrmybal.github.io/CyTools_AIChat/#/fr/overview)
+[Documentation](https://mrmybal.github.io/CyTools_AIChat/#/en/overview) · [Website](https://mrmybal.github.io/CyTools_AIChat/) · [Français](https://mrmybal.github.io/CyTools_AIChat/#/fr/overview)
 
 <p align="center">
   <img src="app/assets/branding/logo.png" alt="CyTools AIChat logo" width="160">

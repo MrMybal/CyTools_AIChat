@@ -1,6 +1,6 @@
 # CyTools_AIChat
 
-[Documentation](https://mrmybal.github.io/CyTools_AIChat/#/fr/overview) · [English](https://mrmybal.github.io/CyTools_AIChat/#/en/overview)
+[Documentation](https://mrmybal.github.io/CyTools_AIChat/#/fr/overview) · [Site web](https://mrmybal.github.io/CyTools_AIChat/?lang=fr) · [English](https://mrmybal.github.io/CyTools_AIChat/#/en/overview)
 
 Maintenance : **Cyberalien**.
 
