@@ -1,0 +1,20 @@
+[
+  {
+    "file": "assets/showcase/conversation.webp",
+    "origin": "Built-in application UI capture with a manually authored fictional fixture",
+    "originalSha256": "64133f2f1904ec45f1325532851a969905b922ec95425e28bf1b1a6ab8f676a3",
+    "transform": "Full frame, converted to WebP; metadata omitted. No compositing or generative editing."
+  },
+  {
+    "file": "assets/showcase/providers.webp",
+    "origin": "Repository screenshot: app/.CyDocBuild/assets/02a366285f3db33f.png",
+    "originalSha256": "02a366285f3db33fb3a5b8d048fb85b30639bb2e26a1c89ddeeb001260d73ea3",
+    "transform": "Full frame, converted to WebP; metadata omitted. No compositing or generative editing."
+  },
+  {
+    "file": "assets/showcase/speech.webp",
+    "origin": "Repository screenshot: app/.CyDocBuild/assets/1cccd57923c91925.png",
+    "originalSha256": "1cccd57923c91925f5e8ccf9c73a40d40c10477456a6468f129330f8c4ce9f42",
+    "transform": "Full frame, converted to WebP; metadata omitted. No compositing or generative editing."
+  }
+]

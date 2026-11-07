@@ -1,0 +1,187 @@
+{
+  "accent": "#82b6ff",
+  "category": {
+    "en": "Conversation / local & connected",
+    "fr": "Conversation / local et connecté"
+  },
+  "intro": {
+    "en": "Your conversations. Your choice of model.",
+    "fr": "Vos conversations. Le modèle de votre choix."
+  },
+  "description": {
+    "en": "Keep your conversations together, switch between connected assistants and local models, and add a voice when you need one.",
+    "fr": "Retrouvez vos conversations, passez des assistants connectés aux modèles locaux et ajoutez la voix lorsque vous en avez besoin."
+  },
+  "audience": {
+    "en": "For people who write, explore ideas and want one desktop home for different language models.",
+    "fr": "Pour écrire, explorer des idées et réunir différents modèles de langage dans une application de bureau."
+  },
+  "tags": [
+    {
+      "en": "GGUF",
+      "fr": "GGUF"
+    },
+    {
+      "en": "CLI providers",
+      "fr": "Fournisseurs CLI"
+    },
+    {
+      "en": "HTTP / API",
+      "fr": "HTTP / API"
+    },
+    {
+      "en": "Speech",
+      "fr": "Voix"
+    }
+  ],
+  "hero": "conversation",
+  "heroCaption": {
+    "en": "Chat workspace · illustrative conversation, prepared without sending a model request.",
+    "fr": "Espace de discussion · conversation fictive préparée sans requête à un modèle."
+  },
+  "sections": [
+    {
+      "id": "conversations",
+      "label": {
+        "en": "01 / Conversations",
+        "fr": "01 / Conversations"
+      },
+      "title": {
+        "en": "Keep each idea in its own conversation.",
+        "fr": "Une conversation pour chaque idée."
+      },
+      "body": {
+        "en": "Open several tabs, return to an earlier thread and keep the transcript on disk. Closing a tab keeps the conversation available.",
+        "fr": "Ouvrez plusieurs onglets, reprenez un échange et conservez son historique sur disque. Fermer un onglet laisse la conversation disponible."
+      },
+      "points": [
+        {
+          "en": "Streaming replies and cancellation",
+          "fr": "Réponses progressives et annulation"
+        },
+        {
+          "en": "Reusable system prompts and sampling presets",
+          "fr": "Instructions système et réglages réutilisables"
+        },
+        {
+          "en": "Export conversations as Markdown or JSON",
+          "fr": "Export des conversations en Markdown ou JSON"
+        }
+      ],
+      "image": "conversation",
+      "caption": {
+        "en": "The real desktop interface with fictional demonstration messages.",
+        "fr": "La véritable interface de bureau avec des messages fictifs de démonstration."
+      },
+      "doc": "guide-lisez-moi"
+    },
+    {
+      "id": "providers",
+      "label": {
+        "en": "02 / Connections",
+        "fr": "02 / Connexions"
+      },
+      "title": {
+        "en": "Connect the assistants you already use.",
+        "fr": "Connectez les assistants que vous utilisez déjà."
+      },
+      "body": {
+        "en": "Detect supported agent command lines or configure an HTTP provider. Session providers keep their native history; stateless providers receive the saved transcript. The interface identifies the provider and model.",
+        "fr": "Détectez les lignes de commande compatibles ou configurez un fournisseur HTTP. Les fournisseurs à sessions gardent leur historique natif ; les autres reçoivent la conversation enregistrée. L’interface indique le fournisseur et le modèle."
+      },
+      "points": [
+        {
+          "en": "Codex, Claude Code and other declared agent connectors",
+          "fr": "Codex, Claude Code et autres connecteurs déclarés"
+        },
+        {
+          "en": "Ollama and OpenAI-compatible endpoints",
+          "fr": "Ollama et points d’accès compatibles OpenAI"
+        },
+        {
+          "en": "Agent CLI connections operate read-only",
+          "fr": "Connexions aux CLI d’agents en lecture seule"
+        }
+      ],
+      "image": "providers",
+      "caption": {
+        "en": "Providers workspace · detection and connection settings.",
+        "fr": "Espace fournisseurs · détection et réglages de connexion."
+      },
+      "doc": "guide-lisez-moi"
+    },
+    {
+      "id": "voice",
+      "label": {
+        "en": "03 / Speech",
+        "fr": "03 / Voix"
+      },
+      "title": {
+        "en": "Speak a thought. Listen to a reply.",
+        "fr": "Dictez une idée. Écoutez une réponse."
+      },
+      "body": {
+        "en": "Dictation writes into the message box without sending it. Optional local speech engines read replies aloud; voice settings and reference takes are managed in a dedicated workspace.",
+        "fr": "La dictée remplit le message sans l’envoyer. Des moteurs vocaux locaux facultatifs lisent les réponses ; un espace dédié gère les voix et leurs références."
+      },
+      "points": [
+        {
+          "en": "Separate transcription and synthesis environments",
+          "fr": "Environnements séparés pour transcription et synthèse"
+        },
+        {
+          "en": "Recorded or imported voice references",
+          "fr": "Références vocales enregistrées ou importées"
+        },
+        {
+          "en": "XTTS-v2 and F5-TTS weights have non-commercial restrictions",
+          "fr": "Les poids XTTS-v2 et F5-TTS ont des restrictions non commerciales"
+        }
+      ],
+      "image": "speech",
+      "caption": {
+        "en": "Speech settings · engines and weights are separate downloads.",
+        "fr": "Réglages vocaux · moteurs et poids sont téléchargés séparément."
+      },
+      "doc": "guide-lisez-moi"
+    }
+  ],
+  "limits": {
+    "en": "Windows x64 is the tested platform. Local GGUF models use the compatible llama.cpp CPU or CUDA engine. Remote providers need their own installed/authenticated client or account. OpenCode and paid provider APIs were not all exercised. Linux has a launcher but is unvalidated.",
+    "fr": "Windows x64 est la plateforme testée. Les modèles GGUF locaux utilisent le moteur llama.cpp compatible, sur CPU ou CUDA. Les fournisseurs distants nécessitent leur propre client installé et authentifié ou leur compte. OpenCode et les API payantes n’ont pas tous été exécutés. Un lanceur Linux existe, sans validation."
+  },
+  "shortName": "AIChat",
+  "repository": "CyTools_AIChat",
+  "private": false,
+  "licence": "GPL-3.0-only",
+  "logo": "assets/showcase/logo.png",
+  "images": {
+    "conversation": {
+      "file": "assets/showcase/conversation.webp",
+      "width": 1320,
+      "height": 880,
+      "caption": {
+        "en": "Chat workspace · illustrative conversation, prepared without sending a model request.",
+        "fr": "Espace de discussion · conversation fictive préparée sans requête à un modèle."
+      }
+    },
+    "providers": {
+      "file": "assets/showcase/providers.webp",
+      "width": 1320,
+      "height": 880,
+      "caption": {
+        "en": "Providers workspace · detection and connection settings.",
+        "fr": "Espace fournisseurs · détection et réglages de connexion."
+      }
+    },
+    "speech": {
+      "file": "assets/showcase/speech.webp",
+      "width": 1320,
+      "height": 880,
+      "caption": {
+        "en": "Speech settings · engines and weights are separate downloads.",
+        "fr": "Réglages vocaux · moteurs et poids sont téléchargés séparément."
+      }
+    }
+  }
+}
