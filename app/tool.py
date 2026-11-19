@@ -431,6 +431,8 @@ def create_runtime(data_dir, **options):
             return original_close(timeout)
 
     runtime.close = close
+    from cytools_core.communication import register_operations as register_communication
+    register_communication(runtime)
     return runtime
 
 

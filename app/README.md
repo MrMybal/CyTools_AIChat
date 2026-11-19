@@ -55,10 +55,7 @@ runtime\python\Scripts\python.exe app\build_manifest.py
 powershell -ExecutionPolicy Bypass -File app\build_launcher.ps1
 ```
 
-`requirements.txt` installs CyToolsCore 0.10.1 (MIT) from its public repository,
-https://github.com/MrMybal/CyToolsCore, pinned to commit `a8d200f2d0ba`, the code this Tool was
-verified against. **git must be on the PATH**: pip clones that commit. The manifest declares
-`exclusiveGroups`, which the scheduler only enforces from CyToolsCore 0.10.0.
+`requirements.txt` selects the Windows native platform wheel of Core 0.11.0. The wheel and its checksum are in `app/packages/`; see Native distribution below.
 
 The virtual environment is created at its final path and is never moved: its scripts hold
 absolute paths. Building the launcher needs the Visual Studio C++ build tools; the script
@@ -213,7 +210,7 @@ The expected asset is the `.zip` built by `scripts/build_release.py`: an `app/` 
 `CyTool.json` and a `release.json` declaring `runtimeAbi`, and beside it `LICENSE` and
 `LICENCES/`. The updater refuses an archive without its notices and deploys them with `app/`.
 Bump `RUNTIME_ABI` in `aichat/maintenance.py` whenever a release stops being loadable by the
-runtime already installed: it was bumped for 0.1.1, which needs CyToolsCore 0.10.1 in
+runtime already installed: it was bumped for 0.1.1, which needs CyToolsCore 0.11.0 in
 `runtime/python`. Configure the repository in the Updates tab: the Tool never guesses one.
 
 ## Updating an installation and going back
@@ -246,3 +243,31 @@ The logo source is assets/branding/logo.png. build_icon.ps1 derives the 16-256 p
 CyUI 1.2.0 provides the selected shared interface modules. See [integration and maintenance](Docs/CyUIMigration.md) for the module map, preserved application behavior and validation limits.
 
 CyUI: MIT ([upstream license](https://github.com/MrMybal/CyUI/blob/main/LICENSE)); the complete text is included in LICENCES/CyUI-MIT.txt.
+
+
+## Native distribution
+
+Windows x64 source installation uses the pinned native platform wheel:
+
+```powershell
+python -m pip install "cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.11.0/cytools_core-0.11.0-py3-none-win_amd64.whl"
+```
+
+The same wheel and SHA-256 are included in `app/packages/native-core.json`.
+For an offline upgrade use the private interpreter to install that wheel with `--no-deps`.
+Do not use a source ZIP as if it contained compiled native binaries. On Linux/macOS,
+build Core Native/ with CMake and a compatible CyMCPSDK checkout first; those platforms
+have not been validated by this Windows migration.
+
+After testing and committing source changes, compile the launcher with the existing
+`app/build_launcher` script. Build a fresh Windows package with:
+
+```powershell
+python app/scripts/build_native_release.py --python runtime/python/Scripts/python.exe
+```
+
+The build Python needs `packaging` (or pip); the product interpreter is supplied
+explicitly by `--python`. The builder reads committed application sources, verifies
+the official Python archive, selects the tested base dependencies, includes the
+native Core library and notices, and excludes user data and optional model engines.
+No GitHub workflow is required.
