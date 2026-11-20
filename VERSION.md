@@ -4,12 +4,12 @@
 
 ## Published application
 
-**0.2.3 · EXPERIMENTAL · Windows x64**
+**0.2.4 · EXPERIMENTAL · Windows x64**
 
 This is the application version, not the version of its SDK or UI library. This experimental release is intended for evaluation.
 
-- [Published release and checksums](https://github.com/MrMybal/CyTools_AIChat/releases/tag/v0.2.3)
-- [Portable Windows download](https://github.com/MrMybal/CyTools_AIChat/releases/download/v0.2.3/CyTools_AIChat-0.2.3-windows-x64.zip)
+- [Published release and checksums](https://github.com/MrMybal/CyTools_AIChat/releases/tag/v0.2.4)
+- [Portable Windows download](https://github.com/MrMybal/CyTools_AIChat/releases/download/v0.2.4/CyTools_AIChat-0.2.4-windows-x64.zip)
 
 ## Changes in this binary release
 
@@ -23,7 +23,7 @@ The product showcase, README layout and repository navigation were added after t
 
 | Component | Version | Role |
 | --- | --- | --- |
-| CyTools AIChat | 0.2.3 | Application |
+| CyTools AIChat | 0.2.4 | Application |
 | CyToolsCore | 0.10.1 | SDK / runtime |
 | CyUI | 1.2.0 | Selected UI modules |
 | CyDoc | 0.1.0 | Bundled reader |
@@ -45,3 +45,6 @@ For a compatible existing installation, use its update stream and preserve data/
 
 
 Native CLI / JSONL / HTTP / MCP through CyMCPSDK 0.7.1, packaged Core 0.11.0, complete AI capability discovery, task export and cleanup instructions.
+
+
+Core 0.12.0: native CyMCPSDK 34d4bca, Free by default; explicit profiles preserved.

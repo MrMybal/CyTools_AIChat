@@ -12,8 +12,8 @@
     </td>
     <td width="300" align="right" valign="top">
       <p><sub>Application license</sub><br><a href="LICENSE"><strong>GPL-3.0-only</strong></a></p>
-      <p><sub>Application version</sub><br><a href="VERSION.md"><strong>0.2.3</strong></a><br><strong>EXPERIMENTAL</strong></p>
-      <p><a href="https://github.com/MrMybal/CyTools_AIChat/releases/download/v0.2.3/CyTools_AIChat-0.2.3-windows-x64.zip"><strong>Download</strong></a><br><sub>Windows x64 · portable</sub></p>
+      <p><sub>Application version</sub><br><a href="VERSION.md"><strong>0.2.4</strong></a><br><strong>EXPERIMENTAL</strong></p>
+      <p><a href="https://github.com/MrMybal/CyTools_AIChat/releases/download/v0.2.4/CyTools_AIChat-0.2.4-windows-x64.zip"><strong>Download</strong></a><br><sub>Windows x64 · portable</sub></p>
     </td>
   </tr>
 </table>
@@ -25,7 +25,7 @@ Maintained by **Cyberalien**.
 
 Keep your conversations together, switch between connected assistants and local models, and add a voice when you need one. For people who write, explore ideas and want one desktop home for different language models.
 
-> **EXPERIMENTAL · 0.2.3**
+> **EXPERIMENTAL · 0.2.4**
 >
 > Published Windows build for evaluation; some engine paths remain unvalidated. Read the [version notes and known limitations](VERSION.md).
 
@@ -74,7 +74,7 @@ Dictation writes into the message box without sending it. Optional local speech 
 
 The published application build is **Windows x64**. The portable ZIP includes its private Python runtime and base UI/media dependencies. Models and optional heavy engines are separate downloads.
 
-1. [Download CyTools AIChat 0.2.3](https://github.com/MrMybal/CyTools_AIChat/releases/download/v0.2.3/CyTools_AIChat-0.2.3-windows-x64.zip).
+1. [Download CyTools AIChat 0.2.4](https://github.com/MrMybal/CyTools_AIChat/releases/download/v0.2.4/CyTools_AIChat-0.2.4-windows-x64.zip).
 2. Extract the complete ZIP into a writable folder. Keep `app/` and `runtime/` beside the launcher.
 3. Open **CyTools_AIChat.exe**. Use the installation/model workspace for the components you need; review each component licence and any provider access conditions before download.
 
@@ -98,7 +98,7 @@ Use Python **3.11** for the base source environment. Git is needed for cloning a
 git clone https://github.com/MrMybal/CyTools_AIChat.git
 cd CyTools_AIChat
 py -3.11 -m venv runtime\python
-runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt
+runtime\python\Scripts\python.exe -m pip install --find-links app/packages -r app\requirements.txt
 powershell -File app\build_launcher.ps1
 .\CyTools_AIChat.exe
 ```
@@ -117,7 +117,7 @@ The exact base requirements are in [app/requirements.txt](app/requirements.txt).
 
 | Library · source | License · terms | Use / scope |
 | --- | --- | --- |
-| [CyToolsCore 0.11.0](https://github.com/MrMybal/CyToolsCore) | [MIT](LICENCES/CyToolsCore-MIT.txt) | SDK/runtime: jobs, sessions, resources, CLI and MCP. |
+| [CyToolsCore 0.12.0](https://github.com/MrMybal/CyToolsCore) | [MIT](LICENCES/CyToolsCore-MIT.txt) | SDK/runtime: jobs, sessions, resources, CLI and MCP. |
 | [CyMCPSDK 0.7.1](https://github.com/MrMybal/CyMCPSDK) | [MIT](LICENCES/CyMCPSDK-MIT.txt) | Native CLI, JSONL, HTTP and MCP. |
 | [CyUI 1.2.0](https://github.com/MrMybal/CyUI) | [MIT](LICENCES/CyUI-MIT.txt) | Selected bundled Python UI modules. |
 | [CyDoc 0.1.0](https://github.com/MrMybal/CyDoc) | [MIT](LICENCES/CyDoc-MIT.txt) | Bundled offline reader; Node/npm are authoring/build tools only. |
@@ -151,6 +151,40 @@ This table indexes the main components; it does not replace their complete trans
 
 ## Native AI communication
 
-CyToolsCore **0.11.0** uses **CyMCPSDK 0.7.1** for native CLI, JSONL, HTTP and MCP. Discover all effective options with `ai_communication_status` (`includeOperations: true`). Export wanted task results before cleanup. This first migration requires the full Windows package; application-only updates are for installations that already have the native runtime.
+CyToolsCore **0.12.0** uses **CyMCPSDK 0.7.1** for native CLI, JSONL, HTTP and MCP. Discover all effective options with `ai_communication_status` (`includeOperations: true`). Export wanted task results before cleanup. This first migration requires the full Windows package; application-only updates are for installations that already have the native runtime.
 
-Source-build dependency: `cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.11.0/cytools_core-0.11.0-py3-none-win_amd64.whl`. See [developer instructions](app/README.md) for native builds.
+Source-build dependency: `cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.12.0/cytools_core-0.12.0-py3-none-win_amd64.whl`. See [developer instructions](app/README.md) for native builds.
+
+
+## Local MCP access
+
+Core **0.12.0** embeds native CyMCPSDK commit **`34d4bca`**. From the Tool root, start
+the local service explicitly:
+
+```powershell
+runtime/python/Scripts/python.exe app/tool.py --data-dir data/jobs serve --port 8766
+```
+
+Free is the initial profile: connect using only `http://127.0.0.1:8766/mcp`. All exposed
+operations are callable without a token or additional transport approval. Arguments,
+licence acceptance and explicit destructive-action confirmations remain business rules.
+The portable API is at `/v1`; the listener binds only to 127.0.0.1.
+
+Missing choices migrate to Free; explicit profiles are preserved. Use the server option
+`--access-profile free`, `--access-profile local_controlled`, `--access-profile token_only`
+or `--access-profile protected_access`. Local controlled applies host-selected permissions.
+Token only and Protected require a valid token; Protected retains credential permissions.
+With the command above, the choice persists in `data/jobs/communication.json`. Restart
+the service to change the active profile. CLI/embedded and chat-provider permissions
+are unchanged. Use `ai_communication_status` with `includeOperations: true` for discovery.
+
+Install the full Windows package for this native runtime update; app-only updates reject
+the old runtime ABI. For a local source upgrade, install the bundled wheel:
+
+```powershell
+runtime/python/Scripts/python.exe -m pip install --no-deps app/packages/cytools_core-0.12.0-py3-none-win_amd64.whl
+```
+
+Export wanted task files before `cy_finish_task`. Task cleanup preserves original inputs,
+installed models, conversations and persistent project documents. Windows x64 is the
+validated platform for this update; Linux/macOS native builds require target validation.

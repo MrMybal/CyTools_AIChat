@@ -56,7 +56,7 @@ def state_file():
 ENGINE_REPOSITORY = 'ggml-org/llama.cpp'
 MAX_ASSET_BYTES = 768 * 1024 ** 2
 # Bumped whenever the application stops being loadable by the runtime already installed here.
-RUNTIME_ABI = 'python311-cytools011-imgui192-aichat03'
+RUNTIME_ABI = 'python311-cytools012-imgui192-aichat03'
 USER_AGENT = 'CyTools-AIChat'
 # Files beside app/ that belong to the delivered product and travel with a release: the
 # licence of the Tool and the notices of the components it includes. They are deployed and

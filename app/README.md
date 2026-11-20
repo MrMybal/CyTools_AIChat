@@ -49,13 +49,13 @@ Inside `app/`:
 ```powershell
 py -3.11 -m venv runtime\python
 runtime\python\Scripts\python.exe -m pip install --upgrade pip wheel
-runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt
+runtime\python\Scripts\python.exe -m pip install --find-links app/packages -r app\requirements.txt
 runtime\python\Scripts\python.exe -m pip install -r app\requirements-dev.txt
 runtime\python\Scripts\python.exe app\build_manifest.py
 powershell -ExecutionPolicy Bypass -File app\build_launcher.ps1
 ```
 
-`requirements.txt` selects the Windows native platform wheel of Core 0.11.0. The wheel and its checksum are in `app/packages/`; see Native distribution below.
+`requirements.txt` selects the Windows native platform wheel of Core 0.12.0. The wheel and its checksum are in `app/packages/`; see Native distribution below.
 
 The virtual environment is created at its final path and is never moved: its scripts hold
 absolute paths. Building the launcher needs the Visual Studio C++ build tools; the script
@@ -210,7 +210,7 @@ The expected asset is the `.zip` built by `scripts/build_release.py`: an `app/` 
 `CyTool.json` and a `release.json` declaring `runtimeAbi`, and beside it `LICENSE` and
 `LICENCES/`. The updater refuses an archive without its notices and deploys them with `app/`.
 Bump `RUNTIME_ABI` in `aichat/maintenance.py` whenever a release stops being loadable by the
-runtime already installed: it was bumped for 0.1.1, which needs CyToolsCore 0.11.0 in
+runtime already installed: it was bumped for 0.1.1, which needs CyToolsCore 0.12.0 in
 `runtime/python`. Configure the repository in the Updates tab: the Tool never guesses one.
 
 ## Updating an installation and going back
@@ -220,7 +220,7 @@ release with another `runtimeAbi` therefore takes one more step, in this order:
 
 ```powershell
 git pull                                                             # or unpack the new sources
-runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt
+runtime\python\Scripts\python.exe -m pip install --find-links app/packages -r app\requirements.txt
 runtime\python\Scripts\python.exe -m pytest app\tests -q
 ```
 
@@ -250,7 +250,7 @@ CyUI: MIT ([upstream license](https://github.com/MrMybal/CyUI/blob/main/LICENSE)
 Windows x64 source installation uses the pinned native platform wheel:
 
 ```powershell
-python -m pip install "cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.11.0/cytools_core-0.11.0-py3-none-win_amd64.whl"
+python -m pip install "cytools-core==0.12.0" --find-links app/packages
 ```
 
 The same wheel and SHA-256 are included in `app/packages/native-core.json`.
